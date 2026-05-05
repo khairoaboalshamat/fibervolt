@@ -16,9 +16,7 @@
         "7G",
         "5G",
         "2G",
-        "1G",
-        "500M",
-        "200M"
+        "1G"
       ],
       "description": "Internet plan"
     },
