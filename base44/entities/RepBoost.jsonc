@@ -1,0 +1,23 @@
+{
+  "name": "RepBoost",
+  "type": "object",
+  "properties": {
+    "rep_email": {
+      "type": "string",
+      "description": "Rep email"
+    },
+    "plan": {
+      "type": "string",
+      "description": "Plan name"
+    },
+    "boost_amount": {
+      "type": "number",
+      "description": "Extra commission boost for this rep on this plan"
+    }
+  },
+  "required": [
+    "rep_email",
+    "plan",
+    "boost_amount"
+  ]
+}

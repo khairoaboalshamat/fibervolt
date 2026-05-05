@@ -1,0 +1,212 @@
+import React, { useState, useMemo } from 'react';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { base44 } from '@/api/base44Client';
+import { useNavigate } from 'react-router-dom';
+import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Textarea } from '@/components/ui/textarea';
+import { calcMonthlyBill, calcCommission } from '@/lib/commissionData';
+import { DollarSign, FileText } from 'lucide-react';
+
+export default function NewSale() {
+  const navigate = useNavigate();
+  const queryClient = useQueryClient();
+
+  const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const { data: rates = [] } = useQuery({
+    queryKey: ['rates'],
+    queryFn: () => base44.entities.CommissionRate.list(),
+  });
+  const { data: boosts = [] } = useQuery({
+    queryKey: ['boosts'],
+    queryFn: () => base44.entities.RepBoost.list(),
+  });
+
+  const plans = rates.filter(r => r.type === 'plan');
+  const addons = rates.filter(r => r.type === 'addon');
+
+  const [form, setForm] = useState({
+    customer_name: '',
+    btn: '',
+    plan: '',
+    add_ons: [],
+    sale_date: new Date().toISOString().split('T')[0],
+    install_date: '',
+    notes: '',
+  });
+
+  const monthlyBill = useMemo(() =>
+    form.plan ? calcMonthlyBill(form.plan, form.add_ons, plans, addons) : 0,
+    [form.plan, form.add_ons, plans, addons]
+  );
+
+  const commission = useMemo(() =>
+    form.plan ? calcCommission(form.plan, form.add_ons, plans, addons, boosts, user?.email) : 0,
+    [form.plan, form.add_ons, plans, addons, boosts, user?.email]
+  );
+
+  const createMutation = useMutation({
+    mutationFn: (data) => base44.entities.Sale.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+      navigate('/');
+    },
+  });
+
+  const handleToggleAddon = (addonName) => {
+    setForm(prev => ({
+      ...prev,
+      add_ons: prev.add_ons.includes(addonName)
+        ? prev.add_ons.filter(a => a !== addonName)
+        : [...prev.add_ons, addonName],
+    }));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    createMutation.mutate({
+      ...form,
+      rep_email: user?.email,
+      rep_name: user?.full_name || user?.email,
+      monthly_bill: monthlyBill,
+      commission_amount: commission,
+    });
+  };
+
+  return (
+    <div className="max-w-2xl mx-auto space-y-6">
+      <h1 className="text-2xl font-bold tracking-tight">New Sale</h1>
+
+      <form onSubmit={handleSubmit} className="space-y-6">
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base flex items-center gap-2">
+              <FileText className="h-4 w-4 text-primary" />
+              Customer Details
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Customer Name *</Label>
+                <Input
+                  required
+                  value={form.customer_name}
+                  onChange={e => setForm(p => ({ ...p, customer_name: e.target.value }))}
+                  placeholder="John Smith"
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>BTN *</Label>
+                <Input
+                  required
+                  value={form.btn}
+                  onChange={e => setForm(p => ({ ...p, btn: e.target.value }))}
+                  placeholder="555-123-4567"
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Sale Date *</Label>
+                <Input
+                  type="date"
+                  required
+                  value={form.sale_date}
+                  onChange={e => setForm(p => ({ ...p, sale_date: e.target.value }))}
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Install Date *</Label>
+                <Input
+                  type="date"
+                  required
+                  value={form.install_date}
+                  onChange={e => setForm(p => ({ ...p, install_date: e.target.value }))}
+                />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card>
+          <CardHeader className="pb-4">
+            <CardTitle className="text-base">Plan & Add-Ons</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label>Plan *</Label>
+              <Select value={form.plan} onValueChange={v => setForm(p => ({ ...p, plan: v }))}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Select a plan" />
+                </SelectTrigger>
+                <SelectContent>
+                  {plans.map(p => (
+                    <SelectItem key={p.name} value={p.name}>
+                      {p.name} — ${p.monthly_price}/mo
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="space-y-3">
+              <Label>Add-Ons</Label>
+              {addons.map(a => (
+                <div key={a.name} className="flex items-center gap-3">
+                  <Checkbox
+                    checked={form.add_ons.includes(a.name)}
+                    onCheckedChange={() => handleToggleAddon(a.name)}
+                    id={`addon-${a.name}`}
+                  />
+                  <label htmlFor={`addon-${a.name}`} className="text-sm cursor-pointer flex-1">
+                    {a.name}
+                    <span className="text-muted-foreground ml-1">(+${a.monthly_price}/mo)</span>
+                  </label>
+                </div>
+              ))}
+            </div>
+
+            <div className="space-y-2">
+              <Label>Notes</Label>
+              <Textarea
+                value={form.notes}
+                onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                placeholder="Optional notes..."
+                rows={3}
+              />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="bg-sidebar text-sidebar-foreground">
+          <CardContent className="py-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-sm text-sidebar-foreground/60">Monthly Bill</p>
+                <p className="text-xl font-bold text-white">${monthlyBill.toFixed(2)}</p>
+              </div>
+              <div className="text-right">
+                <p className="text-sm text-sidebar-foreground/60">Expected Commission</p>
+                <p className="text-xl font-bold text-accent">${commission.toFixed(2)}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Button
+          type="submit"
+          className="w-full h-12 text-base font-semibold"
+          disabled={!form.customer_name || !form.btn || !form.plan || !form.install_date || createMutation.isPending}
+        >
+          <DollarSign className="h-5 w-5 mr-2" />
+          {createMutation.isPending ? 'Submitting...' : 'Submit Sale'}
+        </Button>
+      </form>
+    </div>
+  );
+}

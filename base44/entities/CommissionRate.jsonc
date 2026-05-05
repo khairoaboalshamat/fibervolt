@@ -1,0 +1,30 @@
+{
+  "name": "CommissionRate",
+  "type": "object",
+  "properties": {
+    "type": {
+      "type": "string",
+      "enum": [
+        "plan",
+        "addon"
+      ],
+      "description": "Whether this is a plan rate or addon rate"
+    },
+    "name": {
+      "type": "string",
+      "description": "Plan or addon name"
+    },
+    "monthly_price": {
+      "type": "number",
+      "description": "Monthly price for billing"
+    },
+    "commission": {
+      "type": "number",
+      "description": "Base commission amount"
+    }
+  },
+  "required": [
+    "type",
+    "name"
+  ]
+}

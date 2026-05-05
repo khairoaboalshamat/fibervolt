@@ -1,0 +1,87 @@
+{
+  "name": "Sale",
+  "type": "object",
+  "properties": {
+    "customer_name": {
+      "type": "string",
+      "description": "Customer full name"
+    },
+    "btn": {
+      "type": "string",
+      "description": "BTN (billing telephone number)"
+    },
+    "plan": {
+      "type": "string",
+      "enum": [
+        "7G",
+        "5G",
+        "2G",
+        "1G",
+        "500M",
+        "200M"
+      ],
+      "description": "Internet plan"
+    },
+    "add_ons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Selected add-ons"
+    },
+    "sale_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of sale"
+    },
+    "install_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled install date"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "scheduled",
+        "installed",
+        "cancelled"
+      ],
+      "default": "pending",
+      "description": "Sale status"
+    },
+    "paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether commission has been paid"
+    },
+    "rep_email": {
+      "type": "string",
+      "description": "Email of the sales rep"
+    },
+    "rep_name": {
+      "type": "string",
+      "description": "Name of the sales rep"
+    },
+    "monthly_bill": {
+      "type": "number",
+      "description": "Calculated monthly bill"
+    },
+    "commission_amount": {
+      "type": "number",
+      "description": "Expected commission for this sale"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes"
+    }
+  },
+  "required": [
+    "customer_name",
+    "btn",
+    "plan",
+    "sale_date",
+    "install_date",
+    "rep_email"
+  ]
+}
