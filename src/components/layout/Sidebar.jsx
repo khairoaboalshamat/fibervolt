@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, Calendar, Trophy,
-  DollarSign, Shield, LogOut, ChevronLeft, ChevronRight, X
+  DollarSign, Shield, LogOut, ChevronLeft, ChevronRight, X, BarChart2
 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ const NAV_ITEMS = [
 
 const ADMIN_ITEMS = [
   { path: '/admin', label: 'Admin', icon: Shield },
+  { path: '/reports', label: 'Reports', icon: BarChart2 },
 ];
 
 export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, setMobileOpen }) {

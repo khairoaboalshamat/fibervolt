@@ -14,6 +14,7 @@ import CalendarPage from '@/pages/CalendarPage';
 import Leaderboard from '@/pages/Leaderboard';
 import Payouts from '@/pages/Payouts';
 import Admin from '@/pages/Admin';
+import Reports from '@/pages/Reports';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -45,6 +46,7 @@ const AuthenticatedApp = () => {
         <Route path="/leaderboard" element={<Leaderboard />} />
         <Route path="/payouts" element={<Payouts />} />
         <Route path="/admin" element={<Admin />} />
+        <Route path="/reports" element={<Reports />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
