@@ -8,6 +8,38 @@ export const DEFAULT_PLANS = [
   { name: "200M", monthly_price: 75, commission: 0 },
 ];
 
+// Total pay stack per deal (what admin collects from provider)
+export const TOTAL_STACK = {
+  "7G": 475,
+  "5G": 425,
+  "2G": 375,
+  "1G": 325,
+};
+
+// Rep base pay per plan
+export const REP_BASE_PAY = {
+  "7G": 225,
+  "5G": 200,
+  "2G": 175,
+  "1G": 150,
+};
+
+// Rep boost: +$25 every 25 deals, max rep pay is $250
+export function calcRepPay(plan, totalInstalledDeals) {
+  const base = REP_BASE_PAY[plan];
+  if (base === undefined) return 0;
+  const boostTiers = Math.floor(totalInstalledDeals / 25);
+  const boosted = base + boostTiers * 25;
+  return Math.min(boosted, 250);
+}
+
+// Admin override = total stack - rep pay
+export function calcAdminOverride(plan, totalInstalledDeals) {
+  const stack = TOTAL_STACK[plan];
+  if (stack === undefined) return 0;
+  return stack - calcRepPay(plan, totalInstalledDeals);
+}
+
 export const DEFAULT_ADDONS = [
   { name: "Whole Home Wi-Fi", monthly_price: 10, commission: 20 },
   { name: "Whole Home Wi-Fi Plus", monthly_price: 20, commission: 25 },

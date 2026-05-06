@@ -12,6 +12,7 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger, DialogFooter
 } from '@/components/ui/dialog';
 import { UserPlus, Shield, DollarSign, Zap } from 'lucide-react';
+import { TOTAL_STACK, calcRepPay } from '@/lib/commissionData';
 import { Link } from 'react-router-dom';
 import { format } from 'date-fns';
 import { toast } from 'sonner';
@@ -33,6 +34,14 @@ export default function Admin() {
   const { data: rates = [] } = useQuery({ queryKey: ['rates'], queryFn: () => base44.entities.CommissionRate.list() });
 
   const plans = rates.filter(r => r.type === 'plan');
+
+  // Count installed deals per rep for tier calculation
+  const repDealCounts = {};
+  sales.forEach(s => {
+    if (s.status === 'installed' && s.rep_email) {
+      repDealCounts[s.rep_email] = (repDealCounts[s.rep_email] || 0) + 1;
+    }
+  });
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
@@ -174,7 +183,8 @@ export default function Admin() {
                       <th className="pb-3 font-medium">Rep</th>
                       <th className="pb-3 font-medium">Plan</th>
                       <th className="pb-3 font-medium">Install</th>
-                      <th className="pb-3 font-medium">Commission</th>
+                      <th className="pb-3 font-medium">Rep Pay</th>
+                      <th className="pb-3 font-medium">Override</th>
                       <th className="pb-3 font-medium">Status</th>
                       <th className="pb-3 font-medium">Paid</th>
                     </tr>
@@ -192,7 +202,12 @@ export default function Admin() {
                         <td className="py-3 text-muted-foreground">
                           {s.install_date ? format(new Date(s.install_date), 'MMM d') : '—'}
                         </td>
-                        <td className="py-3 font-semibold">${s.commission_amount || 0}</td>
+                        <td className="py-3 font-semibold text-amber-500">
+                          ${TOTAL_STACK[s.plan] ? calcRepPay(s.plan, repDealCounts[s.rep_email] || 0) : (s.commission_amount || 0)}
+                        </td>
+                        <td className="py-3 font-semibold text-accent">
+                          {TOTAL_STACK[s.plan] ? `$${TOTAL_STACK[s.plan] - calcRepPay(s.plan, repDealCounts[s.rep_email] || 0)}` : '—'}
+                        </td>
                         <td className="py-3">
                           <Select value={s.status} onValueChange={v => updateSale.mutate({ id: s.id, data: { status: v } })}>
                             <SelectTrigger className="h-8 w-28">

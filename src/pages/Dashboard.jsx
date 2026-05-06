@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Clock, CheckCircle2, CalendarDays } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import SaleRow from '@/components/dashboard/SaleRow';
+import AdminOverviewCard from '@/components/dashboard/AdminOverviewCard';
 import { format, addDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 
 export default function Dashboard() {
@@ -18,6 +19,12 @@ export default function Dashboard() {
   const { data: sales = [], isLoading } = useQuery({
     queryKey: ['sales'],
     queryFn: () => base44.entities.Sale.list('-created_date', 200),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
   });
 
   const mySales = isAdmin ? sales : sales.filter(s => s.rep_email === user?.email);
@@ -64,6 +71,10 @@ export default function Dashboard() {
         <StatCard label="Awaiting Payout" value={`$${awaiting.toLocaleString()}`} icon={Clock} accent="amber" />
         <StatCard label="Paid Out" value={`$${paidOut.toLocaleString()}`} icon={CheckCircle2} accent="rose" />
       </div>
+
+      {isAdmin && (
+        <AdminOverviewCard sales={sales} users={users} />
+      )}
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
