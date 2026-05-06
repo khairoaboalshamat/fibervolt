@@ -2,23 +2,23 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, Calendar, Trophy,
-  DollarSign, Shield, LogOut, ChevronLeft, ChevronRight, X, BarChart2
-} from 'lucide-react';
+  DollarSign, Shield, LogOut, ChevronLeft, ChevronRight, X, BarChart2 } from
+'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/new-sale', label: 'New Sale', icon: PlusCircle },
-  { path: '/calendar', label: 'Calendar', icon: Calendar },
-  { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-  { path: '/payouts', label: 'Payouts', icon: DollarSign },
-];
+{ path: '/', label: 'Dashboard', icon: LayoutDashboard },
+{ path: '/new-sale', label: 'New Sale', icon: PlusCircle },
+{ path: '/calendar', label: 'Calendar', icon: Calendar },
+{ path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
+{ path: '/payouts', label: 'Payouts', icon: DollarSign }];
+
 
 const ADMIN_ITEMS = [
-  { path: '/admin', label: 'Admin', icon: Shield },
-  { path: '/reports', label: 'Reports', icon: BarChart2 },
-];
+{ path: '/admin', label: 'Admin', icon: Shield },
+{ path: '/reports', label: 'Reports', icon: BarChart2 }];
+
 
 export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, setMobileOpen }) {
   const location = useLocation();
@@ -32,9 +32,9 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
 
   return (
     <>
-      {mobileOpen && (
-        <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
-      )}
+      {mobileOpen &&
+      <div className="fixed inset-0 bg-black/50 z-40 lg:hidden" onClick={() => setMobileOpen(false)} />
+      }
       <aside className={`
         fixed top-0 left-0 h-full z-50 bg-sidebar text-sidebar-foreground
         flex flex-col transition-all duration-300 ease-in-out
@@ -42,29 +42,29 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
         <div className={`flex items-center h-16 px-4 border-b border-sidebar-border ${collapsed ? 'justify-center' : 'justify-between'}`}>
-          {!collapsed && (
-            <h1 className="text-lg font-bold tracking-tight text-white">SalesTracker</h1>
-          )}
+          {!collapsed &&
+          <h1 className="text-lg font-bold tracking-tight text-white hidden">SalesTracker</h1>
+          }
           <Button
             variant="ghost"
             size="icon"
             className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent hidden lg:flex h-8 w-8"
-            onClick={() => setCollapsed(!collapsed)}
-          >
+            onClick={() => setCollapsed(!collapsed)}>
+            
             {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
           </Button>
           <Button
             variant="ghost"
             size="icon"
             className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent lg:hidden h-8 w-8"
-            onClick={() => setMobileOpen(false)}
-          >
+            onClick={() => setMobileOpen(false)}>
+            
             <X className="h-4 w-4" />
           </Button>
         </div>
 
         <nav className="flex-1 py-4 space-y-1 px-3">
-          {items.map(item => {
+          {items.map((item) => {
             const active = location.pathname === item.path;
             return (
               <Link
@@ -73,39 +73,39 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
                 onClick={() => setMobileOpen(false)}
                 className={`
                   flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all
-                  ${active
-                    ? 'bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/25'
-                    : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-                  }
-                  ${collapsed ? 'justify-center' : ''}
+                  ${active ?
+                'bg-sidebar-primary text-sidebar-primary-foreground shadow-lg shadow-primary/25' :
+                'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'}
+                  ${
+                collapsed ? 'justify-center' : ''}
                 `}
-                title={collapsed ? item.label : undefined}
-              >
+                title={collapsed ? item.label : undefined}>
+                
                 <item.icon className="h-5 w-5 shrink-0" />
                 {!collapsed && <span>{item.label}</span>}
-              </Link>
-            );
+              </Link>);
+
           })}
         </nav>
 
         <div className="p-3 border-t border-sidebar-border">
-          {!collapsed && (
-            <div className="px-3 py-2 mb-2">
+          {!collapsed &&
+          <div className="px-3 py-2 mb-2">
               <p className="text-xs text-sidebar-foreground/60 truncate">{user?.full_name || user?.email}</p>
               <p className="text-xs text-sidebar-foreground/40 truncate">{user?.role === 'admin' ? 'Admin' : 'Rep'}</p>
             </div>
-          )}
+          }
           <button
             onClick={handleLogout}
             className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full
               text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all
-              ${collapsed ? 'justify-center' : ''}`}
-          >
+              ${collapsed ? 'justify-center' : ''}`}>
+            
             <LogOut className="h-5 w-5 shrink-0" />
             {!collapsed && <span>Log Out</span>}
           </button>
         </div>
       </aside>
-    </>
-  );
+    </>);
+
 }
