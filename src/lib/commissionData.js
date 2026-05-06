@@ -24,13 +24,22 @@ export const REP_BASE_PAY = {
   "1G": 150,
 };
 
-// Rep boost: +$25 every 25 deals, max rep pay is $250
+// Rep max pay per plan (reached at 100 deals)
+export const REP_MAX_PAY = {
+  "7G": 325,
+  "5G": 300,
+  "2G": 275,
+  "1G": 250,
+};
+
+// Rep boost: +$25 every 25 deals, max at 100 deals (4 tiers)
 export function calcRepPay(plan, totalInstalledDeals) {
   const base = REP_BASE_PAY[plan];
+  const max = REP_MAX_PAY[plan];
   if (base === undefined) return 0;
-  const boostTiers = Math.floor(totalInstalledDeals / 25);
+  const boostTiers = Math.min(Math.floor(totalInstalledDeals / 25), 4);
   const boosted = base + boostTiers * 25;
-  return Math.min(boosted, 250);
+  return Math.min(boosted, max);
 }
 
 // Admin override = total stack - rep pay

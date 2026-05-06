@@ -1,7 +1,7 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { TrendingUp, DollarSign, Users } from 'lucide-react';
-import { TOTAL_STACK, REP_BASE_PAY, calcRepPay, calcAdminOverride } from '@/lib/commissionData';
+import { TOTAL_STACK, REP_BASE_PAY, REP_MAX_PAY, calcRepPay, calcAdminOverride } from '@/lib/commissionData';
 
 export default function AdminOverviewCard({ sales, users }) {
   // Group installed deals per rep
@@ -86,12 +86,19 @@ export default function AdminOverviewCard({ sales, users }) {
         )}
 
         <div className="text-xs text-muted-foreground border-t border-border pt-3 space-y-1">
-          <p className="font-medium">Pay Stack per deal:</p>
+          <p className="font-medium text-foreground">Pay Stack per deal:</p>
+          <div className="grid grid-cols-4 gap-1 text-center font-medium text-foreground/70 pb-1">
+            <span>Plan</span><span>Stack</span><span>Rep (base→max)</span><span>Override</span>
+          </div>
           {Object.entries(TOTAL_STACK).map(([plan, stack]) => (
-            <div key={plan} className="flex justify-between">
-              <span>{plan}: Stack ${stack} | Rep base ${REP_BASE_PAY[plan]} | Override ${stack - REP_BASE_PAY[plan]}</span>
+            <div key={plan} className="grid grid-cols-4 gap-1 text-center">
+              <span className="font-semibold text-foreground">{plan}</span>
+              <span>${stack}</span>
+              <span>${REP_BASE_PAY[plan]}→${REP_MAX_PAY[plan]}</span>
+              <span className="text-accent font-semibold">${stack - REP_MAX_PAY[plan]}–${stack - REP_BASE_PAY[plan]}</span>
             </div>
           ))}
+          <p className="pt-1 text-muted-foreground/70">Rep reaches max pay at 100 deals (+$25 per 25 deals)</p>
         </div>
       </CardContent>
     </Card>
