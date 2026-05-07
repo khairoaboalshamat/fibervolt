@@ -171,15 +171,15 @@ export default function NewSale() {
               )}
             </div>
 
-            <div className="space-y-2 hidden">
-              <Label>Notes</Label>
-              <Textarea
-                value={form.notes}
-                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
-                placeholder="Optional notes..."
-                rows={3} />
-              
-            </div>
+            
+
+
+
+
+
+
+
+            
           </CardContent>
         </Card>
 
