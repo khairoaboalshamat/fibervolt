@@ -19,15 +19,15 @@ export default function NewSale() {
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: rates = [] } = useQuery({
     queryKey: ['rates'],
-    queryFn: () => base44.entities.CommissionRate.list(),
+    queryFn: () => base44.entities.CommissionRate.list()
   });
   const { data: boosts = [] } = useQuery({
     queryKey: ['boosts'],
-    queryFn: () => base44.entities.RepBoost.list(),
+    queryFn: () => base44.entities.RepBoost.list()
   });
 
-  const plans = rates.filter(r => r.type === 'plan');
-  const addons = rates.filter(r => r.type === 'addon');
+  const plans = rates.filter((r) => r.type === 'plan');
+  const addons = rates.filter((r) => r.type === 'addon');
 
   const [form, setForm] = useState({
     customer_name: '',
@@ -36,17 +36,17 @@ export default function NewSale() {
     add_ons: [],
     sale_date: new Date().toISOString().split('T')[0],
     install_date: '',
-    notes: '',
+    notes: ''
   });
 
   const monthlyBill = useMemo(() =>
-    form.plan ? calcMonthlyBill(form.plan, form.add_ons, plans, addons) : 0,
-    [form.plan, form.add_ons, plans, addons]
+  form.plan ? calcMonthlyBill(form.plan, form.add_ons, plans, addons) : 0,
+  [form.plan, form.add_ons, plans, addons]
   );
 
   const commission = useMemo(() =>
-    form.plan ? calcCommission(form.plan, form.add_ons, plans, addons, boosts, user?.email) : 0,
-    [form.plan, form.add_ons, plans, addons, boosts, user?.email]
+  form.plan ? calcCommission(form.plan, form.add_ons, plans, addons, boosts, user?.email) : 0,
+  [form.plan, form.add_ons, plans, addons, boosts, user?.email]
   );
 
   const createMutation = useMutation({
@@ -54,15 +54,15 @@ export default function NewSale() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       navigate('/');
-    },
+    }
   });
 
   const handleToggleAddon = (addonName) => {
-    setForm(prev => ({
+    setForm((prev) => ({
       ...prev,
-      add_ons: prev.add_ons.includes(addonName)
-        ? prev.add_ons.filter(a => a !== addonName)
-        : [...prev.add_ons, addonName],
+      add_ons: prev.add_ons.includes(addonName) ?
+      prev.add_ons.filter((a) => a !== addonName) :
+      [...prev.add_ons, addonName]
     }));
   };
 
@@ -73,7 +73,7 @@ export default function NewSale() {
       rep_email: user?.email,
       rep_name: user?.full_name || user?.email,
       monthly_bill: monthlyBill,
-      commission_amount: commission,
+      commission_amount: commission
     });
   };
 
@@ -96,18 +96,18 @@ export default function NewSale() {
                 <Input
                   required
                   value={form.customer_name}
-                  onChange={e => setForm(p => ({ ...p, customer_name: e.target.value }))}
-                  placeholder="John Smith"
-                />
+                  onChange={(e) => setForm((p) => ({ ...p, customer_name: e.target.value }))}
+                  placeholder="John Smith" />
+                
               </div>
               <div className="space-y-2">
                 <Label>BTN *</Label>
                 <Input
                   required
                   value={form.btn}
-                  onChange={e => setForm(p => ({ ...p, btn: e.target.value }))}
-                  placeholder="555-123-4567"
-                />
+                  onChange={(e) => setForm((p) => ({ ...p, btn: e.target.value }))}
+                  placeholder="555-123-4567" />
+                
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -117,8 +117,8 @@ export default function NewSale() {
                   type="date"
                   required
                   value={form.sale_date}
-                  onChange={e => setForm(p => ({ ...p, sale_date: e.target.value }))}
-                />
+                  onChange={(e) => setForm((p) => ({ ...p, sale_date: e.target.value }))} />
+                
               </div>
               <div className="space-y-2">
                 <Label>Install Date *</Label>
@@ -126,8 +126,8 @@ export default function NewSale() {
                   type="date"
                   required
                   value={form.install_date}
-                  onChange={e => setForm(p => ({ ...p, install_date: e.target.value }))}
-                />
+                  onChange={(e) => setForm((p) => ({ ...p, install_date: e.target.value }))} />
+                
               </div>
             </div>
           </CardContent>
@@ -140,45 +140,45 @@ export default function NewSale() {
           <CardContent className="space-y-4">
             <div className="space-y-2">
               <Label>Plan *</Label>
-              <Select value={form.plan} onValueChange={v => setForm(p => ({ ...p, plan: v }))}>
+              <Select value={form.plan} onValueChange={(v) => setForm((p) => ({ ...p, plan: v }))}>
                 <SelectTrigger>
                   <SelectValue placeholder="Select a plan" />
                 </SelectTrigger>
                 <SelectContent>
-                  {plans.map(p => (
-                    <SelectItem key={p.name} value={p.name}>
+                  {plans.map((p) =>
+                  <SelectItem key={p.name} value={p.name}>
                       {p.name} — ${p.monthly_price}/mo
                     </SelectItem>
-                  ))}
+                  )}
                 </SelectContent>
               </Select>
             </div>
 
             <div className="space-y-3">
               <Label>Add-Ons</Label>
-              {addons.map(a => (
-                <div key={a.name} className="flex items-center gap-3">
+              {addons.map((a) =>
+              <div key={a.name} className="flex items-center gap-3">
                   <Checkbox
-                    checked={form.add_ons.includes(a.name)}
-                    onCheckedChange={() => handleToggleAddon(a.name)}
-                    id={`addon-${a.name}`}
-                  />
+                  checked={form.add_ons.includes(a.name)}
+                  onCheckedChange={() => handleToggleAddon(a.name)}
+                  id={`addon-${a.name}`} />
+                
                   <label htmlFor={`addon-${a.name}`} className="text-sm cursor-pointer flex-1">
                     {a.name}
                     <span className="text-muted-foreground ml-1">(+${a.monthly_price}/mo)</span>
                   </label>
                 </div>
-              ))}
+              )}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 hidden">
               <Label>Notes</Label>
               <Textarea
                 value={form.notes}
-                onChange={e => setForm(p => ({ ...p, notes: e.target.value }))}
+                onChange={(e) => setForm((p) => ({ ...p, notes: e.target.value }))}
                 placeholder="Optional notes..."
-                rows={3}
-              />
+                rows={3} />
+              
             </div>
           </CardContent>
         </Card>
@@ -201,12 +201,12 @@ export default function NewSale() {
         <Button
           type="submit"
           className="w-full h-12 text-base font-semibold"
-          disabled={!form.customer_name || !form.btn || !form.plan || !form.install_date || createMutation.isPending}
-        >
+          disabled={!form.customer_name || !form.btn || !form.plan || !form.install_date || createMutation.isPending}>
+          
           <DollarSign className="h-5 w-5 mr-2" />
           {createMutation.isPending ? 'Submitting...' : 'Submit Sale'}
         </Button>
       </form>
-    </div>
-  );
+    </div>);
+
 }
