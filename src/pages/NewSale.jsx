@@ -33,6 +33,7 @@ export default function NewSale() {
     customer_name: '',
     phone: '',
     address: '',
+    dob: '',
     btn: '',
     plan: '',
     add_ons: [],
@@ -110,12 +111,21 @@ export default function NewSale() {
                   placeholder="555-123-4567" />
               </div>
             </div>
-            <div className="space-y-2">
-              <Label>Address</Label>
-              <Input
-                value={form.address}
-                onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-                placeholder="123 Main St, City, State 12345" />
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Address</Label>
+                <Input
+                  value={form.address}
+                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+                  placeholder="123 Main St, City, State 12345" />
+              </div>
+              <div className="space-y-2">
+                <Label>Date of Birth</Label>
+                <Input
+                  type="date"
+                  value={form.dob}
+                  onChange={(e) => setForm((p) => ({ ...p, dob: e.target.value }))} />
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">

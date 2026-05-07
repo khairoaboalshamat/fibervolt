@@ -14,6 +14,11 @@
       "type": "string",
       "description": "Customer address"
     },
+    "dob": {
+      "type": "string",
+      "format": "date",
+      "description": "Customer date of birth"
+    },
     "btn": {
       "type": "string",
       "description": "BTN (billing telephone number)"
