@@ -50,11 +50,16 @@ export function calcAdminOverride(plan, totalInstalledDeals) {
 }
 
 export const DEFAULT_ADDONS = [
-  { name: "Whole Home Wi-Fi", monthly_price: 10, commission: 20 },
-  { name: "Whole Home Wi-Fi Plus", monthly_price: 20, commission: 25 },
-  { name: "YouTube TV", monthly_price: 73, commission: 25 },
-  { name: "Static IP", monthly_price: 15, commission: 0 },
-  { name: "Unlimited Data", monthly_price: 30, commission: 0 },
+  { name: "Whole Home Wi-Fi", monthly_price: 0, commission: 10 },
+  { name: "Whole Home Wi-Fi Plus", monthly_price: 0, commission: 10 },
+  { name: "Wi-Fi Security", monthly_price: 0, commission: 5 },
+  { name: "Wi-Fi Security Plus", monthly_price: 0, commission: 10 },
+  { name: "Unbreakable Wi-Fi", monthly_price: 0, commission: 20 },
+  { name: "Premium Tech Support", monthly_price: 0, commission: 10 },
+  { name: "Total Shield", monthly_price: 0, commission: 10 },
+  { name: "Identity Protection", monthly_price: 0, commission: 10 },
+  { name: "YouTube TV", monthly_price: 0, commission: 10 },
+  { name: "Netflix", monthly_price: 0, commission: 20 },
 ];
 
 export function calcMonthlyBill(plan, addOns, plans, addons) {
