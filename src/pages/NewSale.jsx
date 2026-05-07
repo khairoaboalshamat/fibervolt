@@ -32,6 +32,7 @@ export default function NewSale() {
   const [form, setForm] = useState({
     customer_name: '',
     phone: '',
+    address: '',
     btn: '',
     plan: '',
     add_ons: [],
@@ -108,6 +109,13 @@ export default function NewSale() {
                   onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
                   placeholder="555-123-4567" />
               </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Address</Label>
+              <Input
+                value={form.address}
+                onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
+                placeholder="123 Main St, City, State 12345" />
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">

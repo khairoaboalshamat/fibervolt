@@ -10,6 +10,10 @@
       "type": "string",
       "description": "Customer phone number"
     },
+    "address": {
+      "type": "string",
+      "description": "Customer address"
+    },
     "btn": {
       "type": "string",
       "description": "BTN (billing telephone number)"
