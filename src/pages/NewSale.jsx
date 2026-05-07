@@ -31,6 +31,7 @@ export default function NewSale() {
 
   const [form, setForm] = useState({
     customer_name: '',
+    phone: '',
     btn: '',
     plan: '',
     add_ons: [],
@@ -98,8 +99,17 @@ export default function NewSale() {
                   value={form.customer_name}
                   onChange={(e) => setForm((p) => ({ ...p, customer_name: e.target.value }))}
                   placeholder="John Smith" />
-                
               </div>
+              <div className="space-y-2">
+                <Label>Phone Number</Label>
+                <Input
+                  type="tel"
+                  value={form.phone}
+                  onChange={(e) => setForm((p) => ({ ...p, phone: e.target.value }))}
+                  placeholder="555-123-4567" />
+              </div>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>BTN *</Label>
                 <Input
@@ -107,7 +117,6 @@ export default function NewSale() {
                   value={form.btn}
                   onChange={(e) => setForm((p) => ({ ...p, btn: e.target.value }))}
                   placeholder="555-123-4567" />
-                
               </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -118,7 +127,6 @@ export default function NewSale() {
                   required
                   value={form.sale_date}
                   onChange={(e) => setForm((p) => ({ ...p, sale_date: e.target.value }))} />
-                
               </div>
               <div className="space-y-2">
                 <Label>Install Date *</Label>
@@ -127,7 +135,6 @@ export default function NewSale() {
                   required
                   value={form.install_date}
                   onChange={(e) => setForm((p) => ({ ...p, install_date: e.target.value }))} />
-                
               </div>
             </div>
           </CardContent>

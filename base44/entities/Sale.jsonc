@@ -6,6 +6,10 @@
       "type": "string",
       "description": "Customer full name"
     },
+    "phone": {
+      "type": "string",
+      "description": "Customer phone number"
+    },
     "btn": {
       "type": "string",
       "description": "BTN (billing telephone number)"
