@@ -1,0 +1,63 @@
+{
+  "name": "Client",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Client full name"
+    },
+    "email": {
+      "type": "string",
+      "description": "Client email"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Client phone"
+    },
+    "address": {
+      "type": "string",
+      "description": "Client address"
+    },
+    "plan": {
+      "type": "string",
+      "description": "Current plan"
+    },
+    "add_ons": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Active add-ons"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive",
+        "cancelled"
+      ],
+      "default": "active",
+      "description": "Client status"
+    },
+    "install_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Install date"
+    },
+    "rep_email": {
+      "type": "string",
+      "description": "Assigned rep email"
+    },
+    "rep_name": {
+      "type": "string",
+      "description": "Assigned rep name"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Notes"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

@@ -1,0 +1,59 @@
+{
+  "name": "MapPin",
+  "type": "object",
+  "properties": {
+    "address": {
+      "type": "string",
+      "description": "Street address"
+    },
+    "lat": {
+      "type": "number",
+      "description": "Latitude"
+    },
+    "lng": {
+      "type": "number",
+      "description": "Longitude"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "lead",
+        "sold",
+        "already_customer",
+        "not_home",
+        "not_interested",
+        "interested",
+        "callback",
+        "not_available"
+      ],
+      "default": "lead",
+      "description": "Door knock status"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Optional notes"
+    },
+    "rep_email": {
+      "type": "string",
+      "description": "Rep who marked this pin"
+    },
+    "rep_name": {
+      "type": "string",
+      "description": "Rep name"
+    },
+    "source": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "upload"
+      ],
+      "default": "manual",
+      "description": "How this pin was created"
+    }
+  },
+  "required": [
+    "lat",
+    "lng",
+    "status"
+  ]
+}
