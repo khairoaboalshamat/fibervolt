@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, Calendar, Trophy,
-  DollarSign, Shield, LogOut, ChevronLeft, ChevronRight, X, BarChart2 } from
+  DollarSign, Shield, LogOut, Menu, X, BarChart2 } from
 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
@@ -51,7 +51,7 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
             className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent hidden lg:flex h-8 w-8"
             onClick={() => setCollapsed(!collapsed)}>
             
-            {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+            {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
           </Button>
           <Button
             variant="ghost"
