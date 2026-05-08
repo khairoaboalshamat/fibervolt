@@ -6,6 +6,9 @@ import { DollarSign, TrendingUp, Clock, CheckCircle2, CalendarDays } from 'lucid
 import StatCard from '@/components/dashboard/StatCard';
 import SaleRow from '@/components/dashboard/SaleRow';
 import AdminOverviewCard from '@/components/dashboard/AdminOverviewCard';
+import SalesTrendChart from '@/components/dashboard/SalesTrendChart';
+import PlanBreakdownChart from '@/components/dashboard/PlanBreakdownChart';
+import StatusBreakdown from '@/components/dashboard/StatusBreakdown';
 import { format, addDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 
 export default function Dashboard() {
@@ -75,6 +78,15 @@ export default function Dashboard() {
       {isAdmin && (
         <AdminOverviewCard sales={sales} users={users} />
       )}
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+        <div className="lg:col-span-2">
+          <SalesTrendChart sales={mySales} />
+        </div>
+        <StatusBreakdown sales={mySales} />
+      </div>
+
+      <PlanBreakdownChart sales={mySales} />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
