@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Locate, MapPin, Eye, EyeOff } from 'lucide-react';
 import { PIN_STATUSES, getStatus } from '@/components/maps/PinStatusBadge';
@@ -31,12 +31,12 @@ function createColorIcon(color) {
   });
 }
 
-function locationIcon() {
+function userLocationIcon() {
   return L.divIcon({
     className: '',
-    html: `<div style="width:16px;height:16px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 0 3px rgba(59,130,246,0.4)"></div>`,
-    iconSize: [16, 16],
-    iconAnchor: [8, 8],
+    html: `<div style="width:18px;height:18px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 0 4px rgba(59,130,246,0.35)"></div>`,
+    iconSize: [18, 18],
+    iconAnchor: [9, 9],
   });
 }
 
@@ -45,47 +45,75 @@ function ClickHandler({ onMapClick }) {
   return null;
 }
 
+// Internal component that can call useMap()
+function FlyToLocation({ location }) {
+  const map = useMap();
+  useEffect(() => {
+    if (location) {
+      map.flyTo([location.lat, location.lng], Math.max(map.getZoom(), 16), { animate: true, duration: 1.2 });
+    }
+  }, [location, map]);
+  return null;
+}
+
 export default function Maps() {
   const queryClient = useQueryClient();
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-  const { data: pins = [] } = useQuery({ queryKey: ['pins'], queryFn: () => base44.entities.MapPin.list('-created_date', 1000) });
-  const { data: sales = [] } = useQuery({ queryKey: ['sales'], queryFn: () => base44.entities.Sale.list('-created_date', 500) });
+  const { data: pins = [], isLoading: pinsLoading } = useQuery({
+    queryKey: ['pins'],
+    queryFn: () => base44.entities.MapPin.list('-created_date', 1000),
+  });
+  const { data: sales = [] } = useQuery({
+    queryKey: ['sales'],
+    queryFn: () => base44.entities.Sale.list('-created_date', 500),
+  });
 
   const isAdmin = user?.role === 'admin';
 
   const [userLocation, setUserLocation] = useState(null);
-  const [newPin, setNewPin] = useState(null); // pending unsaved pin
+  const [flyTo, setFlyTo] = useState(null);
+  const [newPin, setNewPin] = useState(null);
   const [filterStatus, setFilterStatus] = useState('all');
-  const [filterRep, setFilterRep] = useState(isAdmin ? 'all' : user?.email);
+  const [filterRep, setFilterRep] = useState('all');
   const [showLegend, setShowLegend] = useState(true);
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef();
-  const mapRef = useRef();
 
-  // Track user location
+  // Live location tracking
   useEffect(() => {
     if (!navigator.geolocation) return;
     const watcher = navigator.geolocation.watchPosition(
       pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
-      { enableHighAccuracy: true }
+      { enableHighAccuracy: true, maximumAge: 5000 }
     );
     return () => navigator.geolocation.clearWatch(watcher);
   }, []);
 
+  // Real-time pin subscriptions
+  useEffect(() => {
+    const unsub = base44.entities.MapPin.subscribe((event) => {
+      queryClient.setQueryData(['pins'], (old = []) => {
+        if (event.type === 'create') return [event.data, ...old];
+        if (event.type === 'update') return old.map(p => p.id === event.id ? event.data : p);
+        if (event.type === 'delete') return old.filter(p => p.id !== event.id);
+        return old;
+      });
+    });
+    return unsub;
+  }, [queryClient]);
+
   const createPin = useMutation({
     mutationFn: (data) => base44.entities.MapPin.create(data),
-    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['pins'] }); setNewPin(null); },
+    onSuccess: () => setNewPin(null),
   });
 
   const updatePin = useMutation({
     mutationFn: ({ id, data }) => base44.entities.MapPin.update(id, data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pins'] }),
   });
 
   const deletePin = useMutation({
     mutationFn: (id) => base44.entities.MapPin.delete(id),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['pins'] }),
   });
 
   const handleMapClick = useCallback((latlng) => {
@@ -93,7 +121,12 @@ export default function Maps() {
   }, []);
 
   const handleSaveNewPin = (pinData) => {
-    createPin.mutate({ ...pinData, rep_email: user?.email, rep_name: user?.full_name || user?.email, source: 'manual' });
+    createPin.mutate({
+      ...pinData,
+      rep_email: user?.email,
+      rep_name: user?.full_name || user?.email,
+      source: 'manual',
+    });
   };
 
   const handleUpdatePin = (pinData) => {
@@ -104,30 +137,33 @@ export default function Maps() {
     const file = e.target.files[0];
     if (!file) return;
     setUploading(true);
-    const data = await file.arrayBuffer();
-    const workbook = XLSX.read(data);
-    const sheet = workbook.Sheets[workbook.SheetNames[0]];
-    const rows = XLSX.utils.sheet_to_json(sheet);
+    try {
+      const data = await file.arrayBuffer();
+      const workbook = XLSX.read(data);
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const rows = XLSX.utils.sheet_to_json(sheet);
 
-    const toCreate = [];
-    for (const row of rows) {
-      const address = row['address'] || row['Address'] || row['ADDRESS'] || '';
-      const status = (row['status'] || row['Status'] || row['STATUS'] || 'lead').toLowerCase().replace(/\s+/g, '_');
-      const lat = parseFloat(row['lat'] || row['latitude'] || row['Lat'] || '');
-      const lng = parseFloat(row['lng'] || row['longitude'] || row['Lng'] || '');
-      const validStatus = PIN_STATUSES.find(s => s.value === status)?.value || 'lead';
+      const toCreate = [];
+      for (const row of rows) {
+        const address = row['address'] || row['Address'] || row['ADDRESS'] || '';
+        const rawStatus = (row['status'] || row['Status'] || row['STATUS'] || 'lead').toLowerCase().replace(/\s+/g, '_');
+        const lat = parseFloat(row['lat'] || row['latitude'] || row['Lat'] || '');
+        const lng = parseFloat(row['lng'] || row['longitude'] || row['Lng'] || '');
+        const validStatus = PIN_STATUSES.find(s => s.value === rawStatus)?.value || 'lead';
 
-      if (!isNaN(lat) && !isNaN(lng)) {
-        toCreate.push({ address, lat, lng, status: validStatus, rep_email: user?.email, rep_name: user?.full_name || user?.email, source: 'upload' });
+        if (!isNaN(lat) && !isNaN(lng)) {
+          toCreate.push({ address, lat, lng, status: validStatus, rep_email: user?.email, rep_name: user?.full_name || user?.email, source: 'upload' });
+        }
       }
-    }
 
-    if (toCreate.length > 0) {
-      await base44.entities.MapPin.bulkCreate(toCreate);
-      queryClient.invalidateQueries({ queryKey: ['pins'] });
+      if (toCreate.length > 0) {
+        await base44.entities.MapPin.bulkCreate(toCreate);
+        queryClient.invalidateQueries({ queryKey: ['pins'] });
+      }
+    } finally {
+      setUploading(false);
+      e.target.value = '';
     }
-    setUploading(false);
-    e.target.value = '';
   };
 
   const repEmails = useMemo(() => [...new Set(pins.map(p => p.rep_email).filter(Boolean))], [pins]);
@@ -140,25 +176,27 @@ export default function Maps() {
   }), [pins, filterStatus, filterRep, isAdmin, user]);
 
   const defaultCenter = userLocation ? [userLocation.lat, userLocation.lng] : [39.8283, -98.5795];
-
-  const locateMe = () => {
-    if (userLocation && mapRef.current) {
-      mapRef.current.setView([userLocation.lat, userLocation.lng], 16);
-    }
-  };
+  const defaultZoom = userLocation ? 15 : 5;
 
   return (
     <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <MapPin className="h-6 w-6 text-primary" /> D2D Map
           </h1>
-          <p className="text-muted-foreground text-sm">Click the map to drop a pin. Track every door.</p>
+          <p className="text-muted-foreground text-sm">Click the map to drop a pin. Live tracking enabled.</p>
         </div>
         <div className="flex gap-2 flex-wrap">
-          <Button variant="outline" size="sm" onClick={locateMe} disabled={!userLocation}>
-            <Locate className="h-4 w-4 mr-1" /> My Location
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => userLocation && setFlyTo({ ...userLocation, _t: Date.now() })}
+            disabled={!userLocation}
+          >
+            <Locate className="h-4 w-4 mr-1" />
+            {userLocation ? 'My Location' : 'Locating...'}
           </Button>
           <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
             <Upload className="h-4 w-4 mr-1" /> {uploading ? 'Uploading...' : 'Upload Excel'}
@@ -170,6 +208,7 @@ export default function Maps() {
         </div>
       </div>
 
+      {/* KPIs */}
       <MapKPIs pins={pins} sales={sales} userEmail={user?.email} />
 
       {/* Filters */}
@@ -190,27 +229,30 @@ export default function Maps() {
             </SelectContent>
           </Select>
         )}
+        <span className="text-xs text-muted-foreground self-center">
+          {visiblePins.length} pin{visiblePins.length !== 1 ? 's' : ''}
+        </span>
       </div>
 
       {/* Map */}
       <Card className="overflow-hidden p-0">
-        <div style={{ height: '520px', width: '100%', position: 'relative' }}>
+        <div style={{ height: '560px', width: '100%', position: 'relative' }}>
           <MapContainer
             center={defaultCenter}
-            zoom={5}
-            style={{ height: '100%', width: '100%' }}
-            ref={mapRef}
+            zoom={defaultZoom}
+            style={{ height: '100%', width: '100%', zIndex: 0 }}
           >
             <TileLayer
               url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               attribution='&copy; OpenStreetMap contributors'
             />
             <ClickHandler onMapClick={handleMapClick} />
+            {flyTo && <FlyToLocation location={flyTo} />}
 
-            {/* User location marker */}
+            {/* Live user location */}
             {userLocation && (
-              <Marker position={[userLocation.lat, userLocation.lng]} icon={locationIcon()}>
-                <Popup><p className="text-xs font-semibold">You are here</p></Popup>
+              <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon()}>
+                <Popup><p className="text-xs font-semibold text-blue-500">📍 You are here</p></Popup>
               </Marker>
             )}
 
@@ -249,6 +291,10 @@ export default function Maps() {
           {/* Legend */}
           {showLegend && (
             <div className="absolute bottom-4 right-4 z-[1000] bg-card border border-border rounded-lg p-3 shadow-lg space-y-1.5">
+              <div className="flex items-center gap-2 text-xs mb-1">
+                <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#3b82f6', border: '3px solid white', boxShadow: '0 0 0 3px rgba(59,130,246,0.35)', flexShrink: 0 }} />
+                <span className="text-blue-400 font-medium">You</span>
+              </div>
               {PIN_STATUSES.map(s => (
                 <div key={s.value} className="flex items-center gap-2 text-xs">
                   <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
