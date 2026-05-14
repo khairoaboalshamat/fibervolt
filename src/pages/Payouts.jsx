@@ -67,30 +67,23 @@ export default function Payouts() {
 
   const pipeline = mySales.filter(s => ['pending', 'scheduled'].includes(s.status));
   const awaiting = mySales.filter(s => s.status === 'installed' && !s.paid);
-  const partial = mySales.filter(s => s.status === 'installed' && s.partial_paid && !s.paid);
   const paid = mySales.filter(s => s.paid);
 
   const getAdminSaleValue = (s) => getSaleValue(s);
 
   const pipelineTotal = pipeline.reduce((sum, x) => sum + getSaleValue(x), 0);
   
-  // Awaiting = installed + not paid + not partial_paid (full amount due immediately)
+  // Awaiting includes all unpaid sales - split into immediate (80%) and deferred (20%)
   const awaitingImmediate = awaiting.filter(s => !s.partial_paid).reduce((sum, x) => {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
   }, 0);
-  const awaitingDeferred = awaiting.filter(s => !s.partial_paid).reduce((sum, x) => {
+  const awaitingDeferred = awaiting.reduce((sum, x) => {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.2) : 0);
   }, 0);
   
-  // Partial paid = installed + partial_paid + not paid (20% deferred remaining)
-  const partialDeferred = partial.reduce((sum, x) => {
-    const val = getSaleValue(x);
-    return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.2) : 0);
-  }, 0);
-  
-  const awaitingTotal = awaitingImmediate + awaitingDeferred + partialDeferred;
+  const awaitingTotal = awaitingImmediate + awaitingDeferred;
   const paidTotal = paid.reduce((sum, x) => {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
@@ -106,26 +99,22 @@ export default function Payouts() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Pipeline" value={`$${pipelineTotal.toLocaleString()}`} icon={TrendingUp} accent="blue" />
-        {awaitingDeferred > 0 ? (
-          <div className="rounded-xl border bg-card shadow p-4 flex flex-col gap-1">
-            <div className="flex items-center gap-2 mb-1">
-              <Clock className="w-4 h-4 text-amber-500" />
-              <span className="text-sm font-medium text-muted-foreground">Awaiting Payout</span>
+        <div className="rounded-xl border bg-card shadow p-4 flex flex-col gap-1">
+          <div className="flex items-center gap-2 mb-1">
+            <Clock className="w-4 h-4 text-amber-500" />
+            <span className="text-sm font-medium text-muted-foreground">Awaiting Payout</span>
+          </div>
+          <div className="flex items-end justify-between">
+            <div>
+              <p className="text-xl font-bold">${awaitingImmediate.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">Now</p>
             </div>
-            <div className="flex items-end justify-between">
-              <div>
-                <p className="text-xl font-bold">${awaitingImmediate.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">80% — immediate</p>
-              </div>
-              <div className="text-right">
-                <p className="text-base font-semibold text-amber-500">${awaitingDeferred.toLocaleString()}</p>
-                <p className="text-xs text-muted-foreground">20% — in 3 months</p>
-              </div>
+            <div className="text-right">
+              <p className="text-base font-semibold text-amber-500">${awaitingDeferred.toLocaleString()}</p>
+              <p className="text-xs text-muted-foreground">20% — in 3 months</p>
             </div>
           </div>
-        ) : (
-          <StatCard label="Awaiting Payout" value={`$${awaitingTotal.toLocaleString()}`} icon={Clock} accent="amber" />
-        )}
+        </div>
         <StatCard label="Paid" value={`$${paidTotal.toLocaleString()}`} icon={CheckCircle2} accent="green" />
       </div>
 
@@ -133,7 +122,6 @@ export default function Payouts() {
         <TabsList>
           <TabsTrigger value="pipeline">Pipeline ({pipeline.length})</TabsTrigger>
           <TabsTrigger value="awaiting">Awaiting ({awaiting.length})</TabsTrigger>
-          <TabsTrigger value="partial">Partial Paid ({partial.length})</TabsTrigger>
           <TabsTrigger value="paid">Paid ({paid.length})</TabsTrigger>
           <TabsTrigger value="rates">My Rates</TabsTrigger>
         </TabsList>
@@ -185,54 +173,11 @@ export default function Payouts() {
                         />
                         {immediate !== null && (
                           <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground items-center justify-between">
-                            <span>Your pay: <span className="font-semibold text-foreground">${immediate.toLocaleString()} now</span></span>
-                            <span className="text-amber-500 font-medium">+ ${deferred.toLocaleString()} in 3 months</span>
+                            <span>Your pay: <span className="font-semibold text-foreground">${immediate.toLocaleString()}</span></span>
+                            <span className="text-amber-500 font-medium">+ ${deferred.toLocaleString()} deferred</span>
                             {isAdmin && isRepAdminFlag && (
                               <Button size="sm" variant="outline" onClick={() => updateMutation.mutate({ id: s.id, data: { partial_paid: true } })}>
                                 Mark 80% Paid
-                              </Button>
-                            )}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
-
-        <TabsContent value="partial">
-          <Card>
-            {partialDeferred > 0 && partial.length > 0 && (
-              <CardHeader className="pb-2 pt-4">
-                <div className="text-sm text-muted-foreground">
-                  Remaining 20% deferred: <span className="font-semibold text-amber-500">${partialDeferred.toLocaleString()}</span>
-                </div>
-              </CardHeader>
-            )}
-            <CardContent className="pt-4">
-              {partial.length === 0 ? (
-                <p className="text-sm text-muted-foreground py-6 text-center">No partial paid sales</p>
-              ) : (
-                <div className="divide-y divide-border">
-                  {partial.map(s => {
-                    const val = getSaleValue(s);
-                    const isRepAdminFlag = isRepAdmin(s.rep_email);
-                    const remaining = isRepAdminFlag ? Math.round(val * 0.2) : 0;
-                    return (
-                      <div key={s.id}>
-                        <SaleRow sale={s} displayValue={val} showRep={isAdmin}
-                          repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdminFlag ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
-                          override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdminFlag ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
-                        />
-                        {remaining > 0 && (
-                          <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground items-center justify-between">
-                            <span>Remaining 20%: <span className="font-semibold text-amber-500">${remaining.toLocaleString()}</span></span>
-                            {isAdmin && (
-                              <Button size="sm" variant="outline" onClick={() => updateMutation.mutate({ id: s.id, data: { paid: true } })}>
-                                Mark Fully Paid
                               </Button>
                             )}
                           </div>
