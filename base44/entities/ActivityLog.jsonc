@@ -36,7 +36,18 @@
     "action"
   ],
   "rls": {
-    "create": {},
+    "create": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.rep_email": "{{user.email}}"
+        }
+      ]
+    },
     "read": {
       "$or": [
         {
