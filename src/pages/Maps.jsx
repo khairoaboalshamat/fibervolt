@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Locate, Layers, SatelliteDish, Map, Filter, MapPin } from 'lucide-react';
+import { Upload, Locate, Layers, SatelliteDish, Map, Filter, MapPin, PenLine } from 'lucide-react';
 import { PIN_STATUSES } from '@/components/maps/PinStatusBadge';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
@@ -14,6 +14,7 @@ import OfflineBanner from '@/components/maps/OfflineBanner';
 import { addToOfflineQueue, flushOfflineQueue, flushSyncQueue, addToSyncQueue, getSyncQueue, cachePins, getPinCache } from '@/lib/offlinePins';
 import * as XLSX from 'xlsx';
 import MapPinDrawer from '@/components/maps/MapPinDrawer';
+import TerritoryDrawer from '@/components/maps/TerritoryDrawer';
 import ClusteredPins from '@/components/maps/ClusteredPins';
 import MapSearchBar from '@/components/maps/MapSearchBar';
 
@@ -53,10 +54,11 @@ function userLocationIcon() {
   });
 }
 
-function ClickHandler({ onMapClick, addingPin, drawerOpen }) {
+function ClickHandler({ onMapClick, onTerritoryClick, addingPin, drawingTerritory, drawerOpen }) {
   useMapEvents({
     click: (e) => {
       if (addingPin && !drawerOpen) onMapClick(e.latlng);
+      if (drawingTerritory && !drawerOpen) onTerritoryClick({ lat: e.latlng.lat, lng: e.latlng.lng });
     }
   });
   return null;
@@ -91,6 +93,11 @@ export default function Maps() {
     queryKey: ['territories'],
     queryFn: () => base44.entities.Territory.list('-created_date', 200),
   });
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
+  });
 
   const isAdmin = user?.role === 'admin';
   const [userLocation, setUserLocation] = useState(null);
@@ -104,6 +111,8 @@ export default function Maps() {
   const [uploading, setUploading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [addingPin, setAddingPin] = useState(false);
+  const [drawingTerritory, setDrawingTerritory] = useState(false);
+  const [draftTerritoryPoints, setDraftTerritoryPoints] = useState([]);
   const fileInputRef = useRef();
 
   const drawerPin = selectedPin || newPin;
@@ -134,6 +143,14 @@ export default function Maps() {
   const createPin = useMutation({ mutationFn: (d) => base44.entities.MapPin.create(d) });
   const updatePin = useMutation({ mutationFn: ({ id, data }) => base44.entities.MapPin.update(id, data) });
   const deletePin = useMutation({ mutationFn: (id) => base44.entities.MapPin.delete(id) });
+  const createTerritory = useMutation({
+    mutationFn: (data) => base44.entities.Territory.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['territories'] });
+      setDraftTerritoryPoints([]);
+      setDrawingTerritory(false);
+    },
+  });
 
   const logActivity = (action, detail, meta = {}) => {
     base44.entities.ActivityLog.create({
@@ -157,6 +174,10 @@ export default function Maps() {
     } catch (error) {
       console.error('Geocoding failed:', error);
     }
+  }, []);
+
+  const handleTerritoryClick = useCallback((point) => {
+    setDraftTerritoryPoints(prev => [...prev, point]);
   }, []);
 
   const handleSave = (pinData) => {
@@ -272,7 +293,7 @@ export default function Maps() {
         zoomControl={false}
       >
         <TileLayer url={tileUrl} attribution="" />
-        <ClickHandler onMapClick={handleMapClick} addingPin={addingPin} drawerOpen={drawerOpen} />
+        <ClickHandler onMapClick={handleMapClick} onTerritoryClick={handleTerritoryClick} addingPin={addingPin} drawingTerritory={drawingTerritory} drawerOpen={drawerOpen} />
         {flyTo && <FlyToLocation location={flyTo} />}
 
         {/* Territory overlays */}
@@ -302,6 +323,28 @@ export default function Maps() {
         {newPin && (
           <Marker position={[newPin.lat, newPin.lng]} icon={createPinIcon('#94a3b8', true)} />
         )}
+
+        {/* Draft territory polygon */}
+        {draftTerritoryPoints.length >= 2 && (
+          <Polygon
+            positions={draftTerritoryPoints.map(p => [p.lat, p.lng])}
+            pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 2, dashArray: '6 4' }}
+          />
+        )}
+
+        {/* Draft territory markers */}
+        {draftTerritoryPoints.map((p, i) => (
+          <Marker
+            key={i}
+            position={[p.lat, p.lng]}
+            icon={L.divIcon({
+              className: '',
+              html: `<div style="width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid #3b82f6;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`,
+              iconSize: [10, 10],
+              iconAnchor: [5, 5],
+            })}
+          />
+        ))}
       </MapContainer>
 
       {/* Top bar overlay */}
@@ -351,9 +394,9 @@ export default function Maps() {
         </div>
       )}
 
-      {/* Add Pin button */}
+      {/* Add Pin / Draw Territory buttons */}
       {!drawerOpen && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000]">
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-2">
           <button
             onClick={() => { setAddingPin(v => !v); setSelectedPin(null); setNewPin(null); }}
             className={`flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-xl transition-all ${
@@ -365,6 +408,19 @@ export default function Maps() {
             <MapPin className="h-4 w-4" />
             {addingPin ? 'Tap map to place pin — cancel' : '+ Add Pin'}
           </button>
+          {isAdmin && (
+            <button
+              onClick={() => { setDrawingTerritory(v => !v); setDraftTerritoryPoints([]); }}
+              className={`flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-xl transition-all ${
+                drawingTerritory
+                  ? 'bg-destructive text-white ring-4 ring-destructive/30'
+                  : 'bg-primary text-white hover:bg-primary/90'
+              }`}
+            >
+              <PenLine className="h-4 w-4" />
+              {drawingTerritory ? `${draftTerritoryPoints.length} points — cancel` : '+ Draw Territory'}
+            </button>
+          )}
         </div>
       )}
 
@@ -422,6 +478,20 @@ export default function Maps() {
         onSave={handleSave}
         onDelete={handleDelete}
         onClose={() => { setSelectedPin(null); setNewPin(null); setAddingPin(false); }}
+      />
+
+      {/* Territory drawing drawer */}
+      <TerritoryDrawer
+        draftPoints={draftTerritoryPoints}
+        users={allUsers}
+        isLoading={createTerritory.isPending}
+        onSave={(data) => {
+          createTerritory.mutate(data);
+        }}
+        onCancel={() => {
+          setDrawingTerritory(false);
+          setDraftTerritoryPoints([]);
+        }}
       />
     </div>
   );
