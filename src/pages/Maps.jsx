@@ -68,7 +68,9 @@ function ClickHandler({ onMapClick, onTerritoryClick, addingPin, drawingTerritor
 function FlyToLocation({ location }) {
   const map = useMap();
   useEffect(() => {
-    if (location) map.flyTo([location.lat, location.lng], Math.max(map.getZoom(), 17), { animate: true, duration: 1 });
+    if (location && typeof location.lat === 'number' && typeof location.lng === 'number' && !isNaN(location.lat) && !isNaN(location.lng)) {
+      map.flyTo([location.lat, location.lng], Math.max(map.getZoom(), 17), { animate: true, duration: 1 });
+    }
   }, [location, map]);
   return null;
 }
