@@ -130,7 +130,18 @@ export default function Maps() {
   };
 
   const handleUpdatePin = (pinData) => {
-    updatePin.mutate({ id: pinData.id, data: { status: pinData.status, notes: pinData.notes } });
+    updatePin.mutate({
+      id: pinData.id,
+      data: {
+        status: pinData.status,
+        notes: pinData.notes,
+        customer_name: pinData.customer_name,
+        phone: pinData.phone,
+        email: pinData.email,
+        fiber_status: pinData.fiber_status,
+        follow_up_date: pinData.follow_up_date,
+      }
+    });
   };
 
   const handleExcelUpload = async (e) => {
@@ -236,7 +247,7 @@ export default function Maps() {
 
       {/* Map */}
       <Card className="overflow-hidden p-0">
-        <div style={{ height: '560px', width: '100%', position: 'relative' }}>
+        <div style={{ height: 'calc(100vh - 340px)', minHeight: '420px', width: '100%', position: 'relative' }}>
           <MapContainer
             center={defaultCenter}
             zoom={defaultZoom}

@@ -18,20 +18,53 @@
       "type": "string",
       "enum": [
         "lead",
-        "sold",
-        "already_customer",
-        "not_home",
-        "not_interested",
+        "knocked",
+        "no_answer",
+        "follow_up",
         "interested",
+        "not_interested",
         "callback",
+        "already_customer",
+        "sale",
+        "installed",
+        "cancelled",
         "not_available"
       ],
       "default": "lead",
-      "description": "Door knock status"
+      "description": "Door knock / lead status"
+    },
+    "customer_name": {
+      "type": "string",
+      "description": "Customer name"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Customer phone"
+    },
+    "email": {
+      "type": "string",
+      "description": "Customer email"
+    },
+    "fiber_status": {
+      "type": "string",
+      "enum": [
+        "unknown",
+        "available",
+        "not_available",
+        "under_construction",
+        "planned"
+      ],
+      "default": "unknown",
+      "description": "Fiber availability at this address"
     },
     "notes": {
       "type": "string",
       "description": "Optional notes"
+    },
+    "follow_up_date": {
+      "type": "string",
+      "format": "date",
+      "description": "Scheduled follow-up date"
     },
     "rep_email": {
       "type": "string",
