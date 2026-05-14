@@ -1,67 +1,56 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { base44 } from '@/api/base44Client';
 
 export default function AddressAutocomplete({ value, onChange, placeholder }) {
-  const inputRef = useRef(null);
-  const autocompleteRef = useRef(null);
-  const [ready, setReady] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
+  const [showDropdown, setShowDropdown] = useState(false);
+  const debounceRef = useRef(null);
 
-  useEffect(() => {
-    // If already loaded, go straight to ready
-    if (window.google?.maps?.places) {
-      setReady(true);
-      return;
-    }
+  const fetchSuggestions = async (input) => {
+    if (!input || input.length < 3) { setSuggestions([]); return; }
+    const res = await base44.functions.invoke('placesAutocomplete', { input });
+    setSuggestions(res.data?.predictions || []);
+    setShowDropdown(true);
+  };
 
-    base44.functions.invoke('getGoogleMapsKey', {}).then(res => {
-      const apiKey = res.data?.key;
-      if (!apiKey) return;
+  const handleChange = (e) => {
+    const val = e.target.value;
+    onChange(val);
+    clearTimeout(debounceRef.current);
+    debounceRef.current = setTimeout(() => fetchSuggestions(val), 300);
+  };
 
-      // If script already injected, wait for it
-      if (document.getElementById('gmaps-script')) {
-        const interval = setInterval(() => {
-          if (window.google?.maps?.places) {
-            clearInterval(interval);
-            setReady(true);
-          }
-        }, 100);
-        return;
-      }
+  const handleSelect = (address) => {
+    onChange(address);
+    setSuggestions([]);
+    setShowDropdown(false);
+  };
 
-      // Set up callback before injecting script
-      window.__gmapsCallback = () => setReady(true);
-
-      const script = document.createElement('script');
-      script.id = 'gmaps-script';
-      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=__gmapsCallback`;
-      script.async = true;
-      script.defer = true;
-      document.head.appendChild(script);
-    });
-  }, []);
-
-  // Init autocomplete once Maps is ready and input is mounted
-  useEffect(() => {
-    if (!ready || !inputRef.current || autocompleteRef.current) return;
-    autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
-      types: ['address'],
-      componentRestrictions: { country: 'us' },
-    });
-    autocompleteRef.current.addListener('place_changed', () => {
-      const place = autocompleteRef.current.getPlace();
-      if (place?.formatted_address) {
-        onChange(place.formatted_address);
-      }
-    });
-  }, [ready]);
+  useEffect(() => () => clearTimeout(debounceRef.current), []);
 
   return (
-    <Input
-      ref={inputRef}
-      value={value}
-      onChange={e => onChange(e.target.value)}
-      placeholder={placeholder || '123 Main St, City, State 12345'}
-    />
+    <div className="relative">
+      <Input
+        value={value}
+        onChange={handleChange}
+        onBlur={() => setTimeout(() => setShowDropdown(false), 150)}
+        onFocus={() => suggestions.length > 0 && setShowDropdown(true)}
+        placeholder={placeholder || '123 Main St, City, State 12345'}
+      />
+      {showDropdown && suggestions.length > 0 && (
+        <ul className="absolute z-50 w-full bg-white border border-border rounded-md shadow-lg mt-1 max-h-60 overflow-auto">
+          {suggestions.map((s, i) => (
+            <li
+              key={i}
+              className="px-3 py-2 text-sm cursor-pointer hover:bg-muted"
+              onMouseDown={() => handleSelect(s)}
+            >
+              {s}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
   );
 }
