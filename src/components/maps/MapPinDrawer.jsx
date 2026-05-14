@@ -1,13 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { X, Phone, Mail, User, MapPin, Calendar, Wifi, ChevronDown } from 'lucide-react';
+import { X, Phone, Mail, User, MapPin, Calendar, Wifi, ChevronDown, DollarSign } from 'lucide-react';
 import { PIN_STATUSES, FIBER_STATUSES } from './PinStatusBadge';
 
 export default function MapPinDrawer({ pin, isNew, onSave, onDelete, onClose }) {
+  const navigate = useNavigate();
   const [status, setStatus] = useState('knocked');
   const [notes, setNotes] = useState('');
   const [customer_name, setCustomerName] = useState('');
@@ -165,6 +167,15 @@ export default function MapPinDrawer({ pin, isNew, onSave, onDelete, onClose }) 
           <Button className="flex-1 h-10 font-semibold" onClick={handleSave}>
             {isNew ? 'Save Pin' : 'Update Pin'}
           </Button>
+          {pin.id && !isNew && (
+            <Button
+              variant="outline"
+              className="h-10 px-4"
+              onClick={() => navigate(`/new-sale?pinId=${pin.id}`)}
+            >
+              <DollarSign className="h-4 w-4" />
+            </Button>
+          )}
           {pin.id && (
             <Button variant="destructive" className="h-10 px-4" onClick={() => onDelete(pin.id)}>
               Remove

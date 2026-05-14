@@ -1,7 +1,7 @@
 import React, { useState, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -15,6 +15,7 @@ import AddressAutocomplete from '@/components/NewSale/AddressAutocomplete';
 export default function NewSale() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const [searchParams] = useSearchParams();
 
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: rates = [] } = useQuery({
@@ -75,6 +76,12 @@ export default function NewSale() {
         rep_name: data.rep_name,
         notes: data.notes || '',
       });
+      // Update the map pin to "sale" status if pinId is present
+      const pinId = searchParams.get('pinId');
+      if (pinId) {
+        await base44.entities.MapPin.update(pinId, { status: 'sale' });
+        queryClient.invalidateQueries({ queryKey: ['pins'] });
+      }
       return sale;
     },
     onSuccess: (sale) => {
