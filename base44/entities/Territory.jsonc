@@ -1,0 +1,71 @@
+{
+  "name": "Territory",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "Territory name"
+    },
+    "color": {
+      "type": "string",
+      "description": "Hex color for the polygon"
+    },
+    "coordinates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number"
+          },
+          "lng": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "Polygon coordinates array"
+    },
+    "assigned_rep_email": {
+      "type": "string",
+      "description": "Assigned rep email"
+    },
+    "assigned_rep_name": {
+      "type": "string",
+      "description": "Assigned rep name"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Territory notes"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
+    }
+  },
+  "required": [
+    "name",
+    "coordinates"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {},
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
