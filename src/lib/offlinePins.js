@@ -1,8 +1,42 @@
 /**
- * Offline pin queue — stores unsaved pins in localStorage and flushes when online.
+ * Offline pin caching and queue system
+ * - Cache: stores existing pins for offline access
+ * - Queue: stores unsaved pins to be synced when online
  */
 
+const CACHE_KEY = 'pin_cache';
 const QUEUE_KEY = 'offline_pin_queue';
+const CACHE_TIMESTAMP_KEY = 'pin_cache_timestamp';
+
+// === PIN CACHE (for offline viewing of existing pins) ===
+
+export function getPinCache() {
+  try {
+    return JSON.parse(localStorage.getItem(CACHE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+export function cachePins(pins) {
+  try {
+    localStorage.setItem(CACHE_KEY, JSON.stringify(pins));
+    localStorage.setItem(CACHE_TIMESTAMP_KEY, Date.now().toString());
+  } catch {
+    // localStorage quota exceeded or unavailable
+  }
+}
+
+export function getCacheTimestamp() {
+  try {
+    const ts = localStorage.getItem(CACHE_TIMESTAMP_KEY);
+    return ts ? parseInt(ts) : null;
+  } catch {
+    return null;
+  }
+}
+
+// === OFFLINE QUEUE (for unsaved pins) ===
 
 export function getOfflineQueue() {
   try {

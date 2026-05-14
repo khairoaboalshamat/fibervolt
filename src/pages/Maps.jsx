@@ -11,7 +11,7 @@ import { PIN_STATUSES } from '@/components/maps/PinStatusBadge';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
 import OfflineBanner from '@/components/maps/OfflineBanner';
-import { addToOfflineQueue, flushOfflineQueue } from '@/lib/offlinePins';
+import { addToOfflineQueue, flushOfflineQueue, cachePins, getPinCache } from '@/lib/offlinePins';
 import * as XLSX from 'xlsx';
 import MapPinDrawer from '@/components/maps/MapPinDrawer';
 import ClusteredPins from '@/components/maps/ClusteredPins';
@@ -75,7 +75,17 @@ export default function Maps() {
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const { data: pins = [] } = useQuery({
     queryKey: ['pins'],
-    queryFn: () => base44.entities.MapPin.list('-created_date', 1000),
+    queryFn: async () => {
+      try {
+        const data = await base44.entities.MapPin.list('-created_date', 1000);
+        // Cache pins when successfully fetched
+        cachePins(data);
+        return data;
+      } catch {
+        // If offline or fetch fails, use cached pins
+        return getPinCache();
+      }
+    },
   });
   const { data: territories = [] } = useQuery({
     queryKey: ['territories'],
