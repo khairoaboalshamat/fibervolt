@@ -71,7 +71,9 @@ export default function Payouts() {
     ? awaiting.reduce((sum, x) => sum + Math.round(getAdminSaleValue(x) * 0.2), 0)
     : 0;
   const awaitingTotal = awaitingImmediate + awaitingDeferred;
-  const paidTotal = paid.reduce((sum, x) => sum + getSaleValue(x), 0);
+  const paidTotal = isAdmin
+    ? paid.reduce((sum, x) => sum + Math.round(getSaleValue(x) * 0.8), 0)
+    : paid.reduce((sum, x) => sum + getSaleValue(x), 0);
 
   const plans = rates.filter(r => r.type === 'plan');
   const addons = rates.filter(r => r.type === 'addon');
@@ -181,7 +183,7 @@ export default function Payouts() {
               ) : (
                 <div className="divide-y divide-border">
                   {paid.map(s => (
-                    <SaleRow key={s.id} sale={s} displayValue={getSaleValue(s)} showRep={isAdmin}
+                    <SaleRow key={s.id} sale={s} displayValue={isAdmin ? Math.round(getSaleValue(s) * 0.8) : getSaleValue(s)} showRep={isAdmin}
                       repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
                       override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
                     />
