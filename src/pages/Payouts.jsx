@@ -33,16 +33,25 @@ export default function Payouts() {
     queryFn: () => base44.entities.RepTier.list(),
   });
 
-  const mySales = isAdmin ? sales : sales.filter(s => s.rep_email === user?.email);
-
-  // For admins, use TOTAL_STACK; for reps use their saved commission_amount
-  const getSaleValue = (s) => isAdmin ? (TOTAL_STACK[s.plan] || s.commission_amount || 0) : (s.commission_amount || 0);
-
   const { data: users = [] } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list(),
     enabled: isAdmin,
   });
+
+  const mySales = isAdmin ? sales : sales.filter(s => s.rep_email === user?.email);
+
+  // For admin viewers: compute correct pay per rep (admin-rep = TOTAL_STACK, regular rep = calcRepPay with tier)
+  // For rep viewers: use their saved commission_amount
+  const getSaleValue = (s) => {
+    if (!isAdmin) return s.commission_amount || 0;
+    if (!TOTAL_STACK[s.plan]) return s.commission_amount || 0;
+    const repUser = users.find(u => u.email === s.rep_email);
+    const repIsAdmin = repUser?.role === 'admin';
+    if (repIsAdmin) return calcAdminPay(s.plan);
+    const tier = repTiers.find(t => t.rep_email === s.rep_email)?.tier ?? 0;
+    return calcRepPay(s.plan, tier);
+  };
 
   const getRepTier = (email) => repTiers.find(t => t.rep_email === email)?.tier || 0;
   const isRepAdmin = (email) => users.find(u => u.email === email)?.role === 'admin';
@@ -51,7 +60,7 @@ export default function Payouts() {
   const awaiting = mySales.filter(s => s.status === 'installed' && !s.paid);
   const paid = mySales.filter(s => s.paid);
 
-  const getAdminSaleValue = (s) => isAdmin && TOTAL_STACK[s.plan] ? calcAdminPay(s.plan) : getSaleValue(s);
+  const getAdminSaleValue = (s) => getSaleValue(s);
 
   const pipelineTotal = pipeline.reduce((sum, x) => sum + getSaleValue(x), 0);
   // For admins: awaiting shows 80% immediate + 20% deferred (3 months)

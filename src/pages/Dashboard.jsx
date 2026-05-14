@@ -10,7 +10,7 @@ import SalesTrendChart from '@/components/dashboard/SalesTrendChart';
 import PlanBreakdownChart from '@/components/dashboard/PlanBreakdownChart';
 import StatusBreakdown from '@/components/dashboard/StatusBreakdown';
 import { format, addDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { TOTAL_STACK } from '@/lib/commissionData';
+import { TOTAL_STACK, calcAdminPay, calcRepPay } from '@/lib/commissionData';
 
 export default function Dashboard() {
   const { data: user } = useQuery({
@@ -31,10 +31,25 @@ export default function Dashboard() {
     enabled: isAdmin,
   });
 
+  const { data: repTiers = [] } = useQuery({
+    queryKey: ['repTiers'],
+    queryFn: () => base44.entities.RepTier.list(),
+    enabled: isAdmin,
+  });
+
   const mySales = isAdmin ? sales : sales.filter(s => s.rep_email === user?.email);
 
-  // Admins see TOTAL_STACK per plan; reps see their saved commission_amount
-  const getSaleValue = (s) => isAdmin ? (TOTAL_STACK[s.plan] || s.commission_amount || 0) : (s.commission_amount || 0);
+  // For admin viewers: compute per-rep correct pay (admin-rep = TOTAL_STACK, regular rep = calcRepPay)
+  // For rep viewers: use their saved commission_amount
+  const getSaleValue = (s) => {
+    if (!isAdmin) return s.commission_amount || 0;
+    if (!TOTAL_STACK[s.plan]) return s.commission_amount || 0;
+    const repUser = users.find(u => u.email === s.rep_email);
+    const isRepAdmin = repUser?.role === 'admin';
+    if (isRepAdmin) return calcAdminPay(s.plan);
+    const tier = repTiers.find(t => t.rep_email === s.rep_email)?.tier ?? 0;
+    return calcRepPay(s.plan, tier);
+  };
 
   const pipeline = mySales.filter(s => s.status !== 'cancelled')
     .reduce((sum, s) => sum + getSaleValue(s), 0);

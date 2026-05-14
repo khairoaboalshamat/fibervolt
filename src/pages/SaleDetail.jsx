@@ -6,7 +6,8 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, User, Phone, CalendarDays, DollarSign, Package, FileText } from 'lucide-react';
+import { ArrowLeft, User, CalendarDays, DollarSign, Package, FileText } from 'lucide-react';
+import { TOTAL_STACK, calcAdminPay, calcRepPay } from '@/lib/commissionData';
 import { format } from 'date-fns';
 
 const statusColors = {
@@ -24,6 +25,18 @@ export default function SaleDetail() {
 
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const isAdmin = user?.role === 'admin';
+
+  const { data: repTiers = [] } = useQuery({
+    queryKey: ['repTiers'],
+    queryFn: () => base44.entities.RepTier.list(),
+    enabled: isAdmin,
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
+  });
 
   const { data: sale, isLoading } = useQuery({
     queryKey: ['sale', saleId],
@@ -51,6 +64,23 @@ export default function SaleDetail() {
   }
 
   const canEditStatus = isAdmin || sale.rep_email === user?.email;
+
+  // Recalculate correct commission based on rep's role
+  const getDisplayCommission = () => {
+    if (!sale) return 0;
+    if (!TOTAL_STACK[sale.plan]) return sale.commission_amount || 0;
+    if (isAdmin) {
+      const repUser = users.find(u => u.email === sale.rep_email);
+      const repIsAdmin = repUser?.role === 'admin';
+      if (repIsAdmin) return calcAdminPay(sale.plan);
+      const tier = repTiers.find(t => t.rep_email === sale.rep_email)?.tier ?? 0;
+      return calcRepPay(sale.plan, tier);
+    }
+    // For reps viewing their own sale: check if they're admin
+    if (user?.role === 'admin') return calcAdminPay(sale.plan);
+    return sale.commission_amount || 0;
+  };
+  const displayCommission = getDisplayCommission();
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
@@ -118,7 +148,7 @@ export default function SaleDetail() {
               <div>
                 <p className="text-xs text-muted-foreground">Monthly / Commission</p>
                 <p className="text-sm font-medium">
-                  ${sale.monthly_bill?.toFixed(2)} / <span className="text-accent font-bold">${sale.commission_amount?.toFixed(2)}</span>
+                  ${sale.monthly_bill?.toFixed(2)} / <span className="text-accent font-bold">${displayCommission.toFixed(2)}</span>
                 </p>
               </div>
             </div>
