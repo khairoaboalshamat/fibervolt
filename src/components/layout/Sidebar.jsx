@@ -9,10 +9,7 @@ import { Button } from '@/components/ui/button';
 const NAV_ITEMS = [
 { path: '/', label: 'Dashboard', icon: LayoutDashboard },
 { path: '/new-sale', label: 'New Sale', icon: PlusCircle },
-{ path: '/calendar', label: 'Calendar', icon: Calendar },
 { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
-{ path: '/payouts', label: 'Payouts', icon: DollarSign },
-{ path: '/clients', label: 'Clients', icon: Users },
 { path: '/maps', label: 'Map', icon: Map },
 { path: '/territories', label: 'Territories', icon: PenLine },
 { path: '/activity', label: 'Activity Feed', icon: Activity },

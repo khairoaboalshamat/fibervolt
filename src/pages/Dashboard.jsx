@@ -2,7 +2,8 @@ import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { DollarSign, TrendingUp, Clock, CheckCircle2, CalendarDays } from 'lucide-react';
+import { DollarSign, TrendingUp, Clock, CheckCircle2, CalendarDays, Calendar, Users, ChevronRight } from 'lucide-react';
+import { Link } from 'react-router-dom';
 import StatCard from '@/components/dashboard/StatCard';
 import SaleRow from '@/components/dashboard/SaleRow';
 import AdminOverviewCard from '@/components/dashboard/AdminOverviewCard';
@@ -98,6 +99,42 @@ export default function Dashboard() {
       {isAdmin && (
         <AdminOverviewCard sales={sales} users={users} repTiers={repTiers} />
       )}
+
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <Link to="/calendar" className="group">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow h-24 flex items-center">
+            <CardContent className="flex items-center justify-between w-full pt-6">
+              <div className="flex items-center gap-3">
+                <Calendar className="h-5 w-5 text-primary" />
+                <span className="font-medium">Calendar</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/clients" className="group">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow h-24 flex items-center">
+            <CardContent className="flex items-center justify-between w-full pt-6">
+              <div className="flex items-center gap-3">
+                <Users className="h-5 w-5 text-primary" />
+                <span className="font-medium">Clients</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+            </CardContent>
+          </Card>
+        </Link>
+        <Link to="/payouts" className="group">
+          <Card className="cursor-pointer hover:shadow-md transition-shadow h-24 flex items-center">
+            <CardContent className="flex items-center justify-between w-full pt-6">
+              <div className="flex items-center gap-3">
+                <DollarSign className="h-5 w-5 text-primary" />
+                <span className="font-medium">Payouts</span>
+              </div>
+              <ChevronRight className="h-4 w-4 text-muted-foreground group-hover:translate-x-1 transition-transform" />
+            </CardContent>
+          </Card>
+        </Link>
+      </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
         <div className="lg:col-span-2">
