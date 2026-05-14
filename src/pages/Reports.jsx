@@ -61,10 +61,11 @@ export default function Reports() {
       const isRepAdmin = repUser?.role === 'admin';
       const tierRecord = repTiers.find(t => t.rep_email === s.rep_email);
       const tier = tierRecord?.tier ?? 0;
-      const repPay = TOTAL_STACK[s.plan]
+      const basePay = TOTAL_STACK[s.plan]
         ? (isRepAdmin ? calcAdminPay(s.plan) : calcRepPay(s.plan, tier))
         : (s.commission_amount || 0);
-      const override = isRepAdmin ? 0 : stack - repPay;
+      const repPay = isRepAdmin ? Math.round(basePay * 0.8) : basePay;
+      const override = isRepAdmin ? 0 : stack - basePay;
       return { ...s, stack, repPay, override };
     });
   }, [filteredSales, repTiers, users]);

@@ -69,16 +69,17 @@ export default function SaleDetail() {
   const getDisplayCommission = () => {
     if (!sale) return 0;
     if (!TOTAL_STACK[sale.plan]) return sale.commission_amount || 0;
+    let basePay = sale.commission_amount || 0;
     if (isAdmin) {
       const repUser = users.find(u => u.email === sale.rep_email);
       const repIsAdmin = repUser?.role === 'admin';
-      if (repIsAdmin) return calcAdminPay(sale.plan);
-      const tier = repTiers.find(t => t.rep_email === sale.rep_email)?.tier ?? 0;
-      return calcRepPay(sale.plan, tier);
+      basePay = repIsAdmin ? calcAdminPay(sale.plan) : calcRepPay(sale.plan, repTiers.find(t => t.rep_email === sale.rep_email)?.tier ?? 0);
+    } else if (user?.role === 'admin') {
+      basePay = calcAdminPay(sale.plan);
     }
-    // For reps viewing their own sale: check if they're admin
-    if (user?.role === 'admin') return calcAdminPay(sale.plan);
-    return sale.commission_amount || 0;
+    const repUser = isAdmin ? users.find(u => u.email === sale.rep_email) : user;
+    const isRepAdmin = repUser?.role === 'admin';
+    return isRepAdmin ? Math.round(basePay * 0.8) : basePay;
   };
   const displayCommission = getDisplayCommission();
 
