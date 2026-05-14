@@ -9,6 +9,8 @@ import { startOfWeek, startOfMonth, isAfter } from 'date-fns';
 export default function Leaderboard() {
   const [period, setPeriod] = useState('month');
 
+  const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+
   const { data: sales = [] } = useQuery({
     queryKey: ['sales'],
     queryFn: () => base44.entities.Sale.list('-created_date', 1000),
@@ -126,7 +128,9 @@ export default function Leaderboard() {
                   <span className="text-sm font-bold text-muted-foreground w-6 text-right mr-3">{idx + 1}</span>
                   <div className="flex-1">
                     <p className="font-medium text-sm">{rep.name}</p>
-                    <p className="text-xs text-muted-foreground">${rep.commission.toLocaleString()} commission</p>
+                    {(user?.role === 'admin' || rep.email === user?.email) && (
+                      <p className="text-xs text-muted-foreground">${rep.commission.toLocaleString()} commission</p>
+                    )}
                   </div>
                   <span className="w-20 text-center font-bold text-primary">{rep.sales}</span>
                   <span className="w-20 text-center font-bold text-accent">{rep.installs}</span>
