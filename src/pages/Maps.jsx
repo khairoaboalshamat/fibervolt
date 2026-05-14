@@ -11,7 +11,7 @@ import { PIN_STATUSES } from '@/components/maps/PinStatusBadge';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
 import OfflineBanner from '@/components/maps/OfflineBanner';
-import { addToOfflineQueue, flushOfflineQueue, cachePins, getPinCache } from '@/lib/offlinePins';
+import { addToOfflineQueue, flushOfflineQueue, flushSyncQueue, addToSyncQueue, getSyncQueue, cachePins, getPinCache } from '@/lib/offlinePins';
 import * as XLSX from 'xlsx';
 import MapPinDrawer from '@/components/maps/MapPinDrawer';
 import ClusteredPins from '@/components/maps/ClusteredPins';
@@ -161,7 +161,13 @@ export default function Maps() {
 
   const handleSave = (pinData) => {
     if (pinData.id) {
-      // update existing
+      // update existing pin
+      if (!navigator.onLine) {
+        // Queue the update for sync when online
+        addToSyncQueue('update', { id: pinData.id, data: pinData });
+        setSelectedPin(null);
+        return;
+      }
       updatePin.mutate({ id: pinData.id, data: pinData }, {
         onSuccess: () => {
           logActivity('pin_updated', `Updated ${pinData.address || 'pin'} → ${pinData.status}`, { status: pinData.status });
@@ -169,6 +175,7 @@ export default function Maps() {
         }
       });
     } else {
+      // new pin
       const fullPin = { ...pinData, rep_email: user?.email, rep_name: user?.full_name || user?.email, source: 'manual' };
       if (!navigator.onLine) {
         addToOfflineQueue(fullPin);
@@ -191,8 +198,13 @@ export default function Maps() {
   };
 
   const handleOfflineSync = async () => {
-    await flushOfflineQueue((pin) => base44.entities.MapPin.create(pin));
-    queryClient.invalidateQueries({ queryKey: ['pins'] });
+    const synced = await flushSyncQueue({
+      create: (pin) => base44.entities.MapPin.create(pin),
+      update: ({ id, data }) => base44.entities.MapPin.update(id, data),
+    });
+    if (synced > 0) {
+      queryClient.invalidateQueries({ queryKey: ['pins'] });
+    }
   };
 
   const handleExcelUpload = async (e) => {

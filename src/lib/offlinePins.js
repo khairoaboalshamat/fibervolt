@@ -1,11 +1,11 @@
 /**
- * Offline pin caching and queue system
+ * Offline sync queue and caching system
  * - Cache: stores existing pins for offline access
- * - Queue: stores unsaved pins to be synced when online
+ * - Sync Queue: stores pin edits, new pins, and sales to sync when online
  */
 
 const CACHE_KEY = 'pin_cache';
-const QUEUE_KEY = 'offline_pin_queue';
+const SYNC_QUEUE_KEY = 'offline_sync_queue';
 const CACHE_TIMESTAMP_KEY = 'pin_cache_timestamp';
 
 // === PIN CACHE (for offline viewing of existing pins) ===
@@ -36,47 +36,89 @@ export function getCacheTimestamp() {
   }
 }
 
-// === OFFLINE QUEUE (for unsaved pins) ===
+// === SYNC QUEUE (for offline edits and new pins) ===
 
+export function getSyncQueue() {
+  try {
+    return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
+  } catch {
+    return [];
+  }
+}
+
+export function addToSyncQueue(action, data) {
+  const queue = getSyncQueue();
+  const entry = {
+    _syncId: Date.now() + Math.random(),
+    action, // 'create', 'update', 'sale'
+    data,
+    timestamp: Date.now(),
+  };
+  queue.push(entry);
+  localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+  return entry._syncId;
+}
+
+export function removeFromSyncQueue(syncId) {
+  const queue = getSyncQueue().filter(p => p._syncId !== syncId);
+  localStorage.setItem(SYNC_QUEUE_KEY, JSON.stringify(queue));
+}
+
+export function clearSyncQueue() {
+  localStorage.removeItem(SYNC_QUEUE_KEY);
+}
+
+/**
+ * Flush the sync queue — processes all queued actions (create, update, sale).
+ * Returns count of successfully synced items.
+ */
+export async function flushSyncQueue(handlers) {
+  const queue = getSyncQueue();
+  if (queue.length === 0) return 0;
+
+  let synced = 0;
+  for (const item of queue) {
+    const { _syncId, action, data } = item;
+    const handler = handlers[action];
+    
+    if (handler) {
+      try {
+        await handler(data);
+        removeFromSyncQueue(_syncId);
+        synced++;
+      } catch (error) {
+        // Keep item in queue if sync fails
+        console.error(`Failed to sync ${action}:`, error);
+      }
+    }
+  }
+  return synced;
+}
+
+// Legacy offline queue support (new pins without customer data)
 export function getOfflineQueue() {
   try {
-    return JSON.parse(localStorage.getItem(QUEUE_KEY) || '[]');
+    return JSON.parse(localStorage.getItem(SYNC_QUEUE_KEY) || '[]');
   } catch {
     return [];
   }
 }
 
 export function addToOfflineQueue(pin) {
-  const queue = getOfflineQueue();
-  const entry = { ...pin, _offlineId: Date.now() + Math.random() };
-  queue.push(entry);
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
-  return entry._offlineId;
+  return addToSyncQueue('create', pin);
 }
 
 export function removeFromOfflineQueue(offlineId) {
-  const queue = getOfflineQueue().filter(p => p._offlineId !== offlineId);
-  localStorage.setItem(QUEUE_KEY, JSON.stringify(queue));
+  removeFromSyncQueue(offlineId);
 }
 
 export function clearOfflineQueue() {
-  localStorage.removeItem(QUEUE_KEY);
+  clearSyncQueue();
 }
 
 /**
- * Flush the queue — tries to create each queued pin.
- * Returns count of successfully synced pins.
+ * Legacy flush function for backward compatibility
  */
 export async function flushOfflineQueue(createFn) {
-  const queue = getOfflineQueue();
-  if (queue.length === 0) return 0;
-
-  let synced = 0;
-  for (const pin of queue) {
-    const { _offlineId, ...pinData } = pin;
-    await createFn(pinData);
-    removeFromOfflineQueue(_offlineId);
-    synced++;
-  }
-  return synced;
+  return flushSyncQueue({ create: createFn });
 }
