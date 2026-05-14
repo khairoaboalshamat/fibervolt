@@ -5,6 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, ShoppingCart, Wrench } from 'lucide-react';
 import { startOfWeek, startOfMonth, isAfter } from 'date-fns';
+import { calcRepPay, TOTAL_STACK } from '@/lib/commissionData';
 
 export default function Leaderboard() {
   const [period, setPeriod] = useState('month');
@@ -14,6 +15,11 @@ export default function Leaderboard() {
   const { data: sales = [] } = useQuery({
     queryKey: ['sales'],
     queryFn: () => base44.entities.Sale.list('-created_date', 1000),
+  });
+
+  const { data: repTiers = [] } = useQuery({
+    queryKey: ['repTiers'],
+    queryFn: () => base44.entities.RepTier.list(),
   });
 
   const cutoff = useMemo(() => {
@@ -41,7 +47,10 @@ export default function Leaderboard() {
       const key = s.rep_email;
       if (!map[key]) map[key] = { email: key, name: s.rep_name || key, sales: 0, installs: 0, commission: 0 };
       map[key].sales++;
-      map[key].commission += s.commission_amount || 0;
+      const tierRecord = repTiers.find(t => t.rep_email === s.rep_email);
+      const tier = tierRecord?.tier ?? 0;
+      const repPay = TOTAL_STACK[s.plan] ? calcRepPay(s.plan, tier) : (s.commission_amount || 0);
+      map[key].commission += repPay;
     });
     filteredInstalls.forEach(s => {
       const key = s.rep_email;
@@ -49,7 +58,7 @@ export default function Leaderboard() {
       map[key].installs++;
     });
     return Object.values(map).sort((a, b) => b.sales - a.sales);
-  }, [filteredSales, filteredInstalls]);
+  }, [filteredSales, filteredInstalls, repTiers]);
 
   const podiumColors = [
     'from-amber-400 to-amber-600',
