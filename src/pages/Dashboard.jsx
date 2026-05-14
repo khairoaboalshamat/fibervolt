@@ -51,21 +51,14 @@ export default function Dashboard() {
     return calcRepPay(s.plan, tier);
   };
 
-  const getSaleValueWithAdmin = (s) => {
-    const val = getSaleValue(s);
-    const repUser = users.find(u => u.email === s.rep_email);
-    const isRepAdmin = repUser?.role === 'admin';
-    return isRepAdmin ? Math.round(val * 0.8) : val;
-  };
-
   const pipeline = mySales.filter(s => s.status !== 'cancelled')
-    .reduce((sum, s) => sum + getSaleValueWithAdmin(s), 0);
+    .reduce((sum, s) => sum + getSaleValue(s), 0);
   const earned = mySales.filter(s => s.status === 'installed')
     .reduce((sum, s) => sum + getSaleValue(s), 0);
   const awaiting = mySales.filter(s => s.status === 'installed' && !s.paid)
-    .reduce((sum, s) => sum + getSaleValueWithAdmin(s), 0);
+    .reduce((sum, s) => sum + getSaleValue(s), 0);
   const paidOut = mySales.filter(s => s.paid)
-    .reduce((sum, s) => sum + getSaleValueWithAdmin(s), 0);
+    .reduce((sum, s) => sum + getSaleValue(s), 0);
 
   const now = new Date();
   const weekEnd = addDays(now, 7);
