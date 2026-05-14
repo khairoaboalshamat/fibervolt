@@ -43,7 +43,7 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
       `}>
         <div className={`flex items-center h-16 px-4 border-b border-sidebar-border ${collapsed ? 'justify-center' : 'justify-between'}`}>
           {!collapsed &&
-          <h1 className="text-lg font-bold tracking-tight text-white hidden">SalesTracker</h1>
+          <img src="https://media.base44.com/images/public/69fa7758d58bb3dfbaee436f/4f4e0194a_FiberVoltLogo.gif" alt="FiberVolt Logo" className="h-10 w-auto object-contain" />
           }
           <Button
             variant="ghost"
