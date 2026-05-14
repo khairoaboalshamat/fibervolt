@@ -12,6 +12,7 @@ import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
 import OfflineBanner from '@/components/maps/OfflineBanner';
 import { addToOfflineQueue, flushOfflineQueue, flushSyncQueue, addToSyncQueue, getSyncQueue, cachePins, getPinCache } from '@/lib/offlinePins';
+import { initOfflineSync, isOnline, getOfflineQueueSize, syncOfflineQueue, getSyncQueueItems } from '@/lib/offlineSync';
 import * as XLSX from 'xlsx';
 import MapPinDrawer from '@/components/maps/MapPinDrawer';
 import TerritoryDrawer from '@/components/maps/TerritoryDrawer';
@@ -76,6 +77,25 @@ export default function Maps() {
   const queryClient = useQueryClient();
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const isAdmin = user?.role === 'admin';
+
+  // Initialize offline sync on mount
+  useEffect(() => {
+    initOfflineSync();
+    
+    // Listen for online event and auto-sync
+    const handleOnline = async () => {
+      const result = await syncOfflineQueue({
+        create: (pin) => base44.entities.MapPin.create(pin),
+        update: ({ id, data }) => base44.entities.MapPin.update(id, data),
+      });
+      if (result.synced > 0) {
+        queryClient.invalidateQueries({ queryKey: ['pins'] });
+      }
+    };
+    
+    window.addEventListener('app:online', handleOnline);
+    return () => window.removeEventListener('app:online', handleOnline);
+  }, [queryClient]);
   
   const { data: pins = [] } = useQuery({
     queryKey: ['pins'],
@@ -219,11 +239,11 @@ export default function Maps() {
   };
 
   const handleOfflineSync = async () => {
-    const synced = await flushSyncQueue({
+    const result = await syncOfflineQueue({
       create: (pin) => base44.entities.MapPin.create(pin),
       update: ({ id, data }) => base44.entities.MapPin.update(id, data),
     });
-    if (synced > 0) {
+    if (result.synced > 0) {
       queryClient.invalidateQueries({ queryKey: ['pins'] });
     }
   };
