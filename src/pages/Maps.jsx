@@ -144,11 +144,11 @@ export default function Maps() {
       .then(data => {
         // Build address from street + city + state for better specificity
         const parts = [];
+        if (data.address?.house_number) parts.push(data.address.house_number);
         if (data.address?.road) parts.push(data.address.road);
-        if (data.address?.house_number) parts[0] = `${data.address.house_number} ${parts[0] || ''}`.trim();
         if (data.address?.city) parts.push(data.address.city);
         if (data.address?.state) parts.push(data.address.state);
-        const address = parts.join(', ').trim() || data.display_name?.split(',').slice(0, 4).join(',').trim() || '';
+        const address = parts.length > 1 ? parts.join(', ') : data.display_name?.split(',').slice(0, 4).join(',').trim() || '';
         setNewPin(prev => prev ? { ...prev, address } : prev);
       })
       .catch(() => {});
