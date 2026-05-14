@@ -11,7 +11,7 @@ import { Upload, Locate, MapPin, Eye, EyeOff, Layers } from 'lucide-react';
 import { PIN_STATUSES, getStatus } from '@/components/maps/PinStatusBadge';
 import PinPopup from '@/components/maps/PinPopup';
 import MapKPIs from '@/components/maps/MapKPIs';
-import RouteOptimizer from '@/components/maps/RouteOptimizer';
+import { RouteOverlay, RoutePanel } from '@/components/maps/RouteOptimizer';
 import * as XLSX from 'xlsx';
 
 // Fix default leaflet marker icons
@@ -73,6 +73,7 @@ export default function Maps() {
     queryFn: () => base44.entities.Territory.list('-created_date', 200),
   });
   const [showTerritories, setShowTerritories] = useState(true);
+  const [routeActive, setRouteActive] = useState(false);
 
   const isAdmin = user?.role === 'admin';
 
@@ -287,6 +288,9 @@ export default function Maps() {
             <ClickHandler onMapClick={handleMapClick} />
             {flyTo && <FlyToLocation location={flyTo} />}
 
+            {/* Route overlay */}
+            <RouteOverlay pins={visiblePins} userLocation={userLocation} active={routeActive} />
+
             {/* Territory overlays */}
             {showTerritories && territories.filter(t => t.status === 'active' && t.coordinates?.length > 2).map(t => (
               <Polygon
@@ -343,7 +347,7 @@ export default function Maps() {
           </MapContainer>
 
           {/* Route Optimizer panel */}
-          <RouteOptimizer pins={visiblePins} userLocation={userLocation} />
+          <RoutePanel pins={visiblePins} userLocation={userLocation} active={routeActive} setActive={setRouteActive} />
 
           {/* Legend */}
           {showLegend && (
