@@ -51,8 +51,17 @@ export default function Payouts() {
   const awaiting = mySales.filter(s => s.status === 'installed' && !s.paid);
   const paid = mySales.filter(s => s.paid);
 
+  const getAdminSaleValue = (s) => isAdmin && TOTAL_STACK[s.plan] ? calcAdminPay(s.plan) : getSaleValue(s);
+
   const pipelineTotal = pipeline.reduce((sum, x) => sum + getSaleValue(x), 0);
-  const awaitingTotal = awaiting.reduce((sum, x) => sum + getSaleValue(x), 0);
+  // For admins: awaiting shows 80% immediate + 20% deferred (3 months)
+  const awaitingImmediate = isAdmin
+    ? awaiting.reduce((sum, x) => sum + Math.round(getAdminSaleValue(x) * 0.8), 0)
+    : awaiting.reduce((sum, x) => sum + getSaleValue(x), 0);
+  const awaitingDeferred = isAdmin
+    ? awaiting.reduce((sum, x) => sum + Math.round(getAdminSaleValue(x) * 0.2), 0)
+    : 0;
+  const awaitingTotal = awaitingImmediate + awaitingDeferred;
   const paidTotal = paid.reduce((sum, x) => sum + getSaleValue(x), 0);
 
   const plans = rates.filter(r => r.type === 'plan');
@@ -65,7 +74,26 @@ export default function Payouts() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Pipeline" value={`$${pipelineTotal.toLocaleString()}`} icon={TrendingUp} accent="blue" />
-        <StatCard label="Awaiting Payout" value={`$${awaitingTotal.toLocaleString()}`} icon={Clock} accent="amber" />
+        {isAdmin ? (
+          <div className="rounded-xl border bg-card shadow p-4 flex flex-col gap-1">
+            <div className="flex items-center gap-2 mb-1">
+              <Clock className="w-4 h-4 text-amber-500" />
+              <span className="text-sm font-medium text-muted-foreground">Awaiting Payout</span>
+            </div>
+            <div className="flex items-end justify-between">
+              <div>
+                <p className="text-xl font-bold">${awaitingImmediate.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">80% — immediate</p>
+              </div>
+              <div className="text-right">
+                <p className="text-base font-semibold text-amber-500">${awaitingDeferred.toLocaleString()}</p>
+                <p className="text-xs text-muted-foreground">20% — in 3 months</p>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <StatCard label="Awaiting Payout" value={`$${awaitingTotal.toLocaleString()}`} icon={Clock} accent="amber" />
+        )}
         <StatCard label="Paid" value={`$${paidTotal.toLocaleString()}`} icon={CheckCircle2} accent="green" />
       </div>
 
@@ -98,17 +126,38 @@ export default function Payouts() {
 
         <TabsContent value="awaiting">
           <Card>
+            {isAdmin && awaiting.length > 0 && (
+              <CardHeader className="pb-2 pt-4">
+                <div className="flex gap-4 text-sm">
+                  <span className="text-muted-foreground">Your 80% now: <span className="font-semibold text-foreground">${awaitingImmediate.toLocaleString()}</span></span>
+                  <span className="text-muted-foreground">20% in 3 months: <span className="font-semibold text-amber-500">${awaitingDeferred.toLocaleString()}</span></span>
+                </div>
+              </CardHeader>
+            )}
             <CardContent className="pt-4">
               {awaiting.length === 0 ? (
                 <p className="text-sm text-muted-foreground py-6 text-center">No sales awaiting payout</p>
               ) : (
                 <div className="divide-y divide-border">
-                  {awaiting.map(s => (
-                    <SaleRow key={s.id} sale={s} displayValue={getSaleValue(s)} showRep={isAdmin}
-                      repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
-                      override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
-                    />
-                  ))}
+                  {awaiting.map(s => {
+                    const adminVal = getAdminSaleValue(s);
+                    const immediate = isAdmin ? Math.round(adminVal * 0.8) : null;
+                    const deferred = isAdmin ? Math.round(adminVal * 0.2) : null;
+                    return (
+                      <div key={s.id}>
+                        <SaleRow sale={s} displayValue={getSaleValue(s)} showRep={isAdmin}
+                          repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                          override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                        />
+                        {isAdmin && (
+                          <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground">
+                            <span>Your pay: <span className="font-semibold text-foreground">${immediate.toLocaleString()} now</span></span>
+                            <span className="text-amber-500 font-medium">+ ${deferred.toLocaleString()} in 3 months</span>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
