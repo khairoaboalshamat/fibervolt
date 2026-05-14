@@ -56,7 +56,18 @@
         "role": "admin"
       }
     },
-    "read": {},
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.assigned_rep_email": "{{user.email}}"
+        }
+      ]
+    },
     "update": {
       "user_condition": {
         "role": "admin"
