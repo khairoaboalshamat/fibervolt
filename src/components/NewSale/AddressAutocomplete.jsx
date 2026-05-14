@@ -43,7 +43,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder }) {
           {suggestions.map((s, i) => (
             <li
               key={i}
-              className="px-3 py-2 text-sm cursor-pointer text-foreground font-medium hover:bg-primary hover:text-white border-b border-border last:border-0"
+              className="px-3 py-2 text-sm cursor-pointer text-gray-900 font-medium hover:bg-primary hover:text-white border-b border-border last:border-0"
               onMouseDown={() => handleSelect(s)}
             >
               {s}
