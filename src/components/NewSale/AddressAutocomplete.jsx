@@ -5,43 +5,45 @@ import { base44 } from '@/api/base44Client';
 export default function AddressAutocomplete({ value, onChange, placeholder }) {
   const inputRef = useRef(null);
   const autocompleteRef = useRef(null);
-  const [apiKey, setApiKey] = useState(null);
-  const [scriptLoaded, setScriptLoaded] = useState(false);
+  const [ready, setReady] = useState(false);
 
-  // Fetch the key once
   useEffect(() => {
+    // If already loaded, go straight to ready
+    if (window.google?.maps?.places) {
+      setReady(true);
+      return;
+    }
+
     base44.functions.invoke('getGoogleMapsKey', {}).then(res => {
-      setApiKey(res.data?.key);
+      const apiKey = res.data?.key;
+      if (!apiKey) return;
+
+      // If script already injected, wait for it
+      if (document.getElementById('gmaps-script')) {
+        const interval = setInterval(() => {
+          if (window.google?.maps?.places) {
+            clearInterval(interval);
+            setReady(true);
+          }
+        }, 100);
+        return;
+      }
+
+      // Set up callback before injecting script
+      window.__gmapsCallback = () => setReady(true);
+
+      const script = document.createElement('script');
+      script.id = 'gmaps-script';
+      script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=__gmapsCallback`;
+      script.async = true;
+      script.defer = true;
+      document.head.appendChild(script);
     });
   }, []);
 
-  // Load Google Maps script once we have the key
+  // Init autocomplete once Maps is ready and input is mounted
   useEffect(() => {
-    if (!apiKey) return;
-    if (window.google?.maps?.places) { setScriptLoaded(true); return; }
-    const existing = document.getElementById('gmaps-script');
-    if (existing) {
-      // Script tag exists but may already be loaded
-      if (window.google?.maps) {
-        setScriptLoaded(true);
-      } else {
-        existing.addEventListener('load', () => setScriptLoaded(true));
-      }
-      return;
-    }
-    const script = document.createElement('script');
-    script.id = 'gmaps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=Function.prototype`;
-    script.async = true;
-    script.defer = true;
-    script.onload = () => setScriptLoaded(true);
-    script.onerror = () => console.error('Failed to load Google Maps script');
-    document.head.appendChild(script);
-  }, [apiKey]);
-
-  // Init autocomplete once script is loaded
-  useEffect(() => {
-    if (!scriptLoaded || !inputRef.current) return;
+    if (!ready || !inputRef.current || autocompleteRef.current) return;
     autocompleteRef.current = new window.google.maps.places.Autocomplete(inputRef.current, {
       types: ['address'],
       componentRestrictions: { country: 'us' },
@@ -52,7 +54,7 @@ export default function AddressAutocomplete({ value, onChange, placeholder }) {
         onChange(place.formatted_address);
       }
     });
-  }, [scriptLoaded]);
+  }, [ready]);
 
   return (
     <Input
