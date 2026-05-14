@@ -9,6 +9,7 @@ import AdminOverviewCard from '@/components/dashboard/AdminOverviewCard';
 import SalesTrendChart from '@/components/dashboard/SalesTrendChart';
 import PlanBreakdownChart from '@/components/dashboard/PlanBreakdownChart';
 import StatusBreakdown from '@/components/dashboard/StatusBreakdown';
+import LiveActivityDashboard from '@/components/dashboard/LiveActivityDashboard';
 import { format, addDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
 import { TOTAL_STACK, calcAdminPay, calcRepPay } from '@/lib/commissionData';
 
@@ -107,7 +108,10 @@ export default function Dashboard() {
 
       <PlanBreakdownChart sales={mySales} />
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="lg:col-span-2">
+          <LiveActivityDashboard maxItems={20} />
+        </div>
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base font-semibold flex items-center gap-2">
@@ -125,22 +129,22 @@ export default function Dashboard() {
             )}
           </CardContent>
         </Card>
-
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-base font-semibold">Recent Sales</CardTitle>
-          </CardHeader>
-          <CardContent className="pt-0">
-            {recent.length === 0 ? (
-              <p className="text-sm text-muted-foreground py-4 text-center">No sales yet</p>
-            ) : (
-              <div className="divide-y divide-border">
-                {recent.map(s => <SaleRow key={s.id} sale={s} />)}
-              </div>
-            )}
-          </CardContent>
-        </Card>
       </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base font-semibold">Recent Sales</CardTitle>
+        </CardHeader>
+        <CardContent className="pt-0">
+          {recent.length === 0 ? (
+            <p className="text-sm text-muted-foreground py-4 text-center">No sales yet</p>
+          ) : (
+            <div className="divide-y divide-border">
+              {recent.map(s => <SaleRow key={s.id} sale={s} />)}
+            </div>
+          )}
+        </CardContent>
+      </Card>
     </div>
   );
 }
