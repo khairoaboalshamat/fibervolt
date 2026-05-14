@@ -75,6 +75,8 @@ function FlyToLocation({ location }) {
 export default function Maps() {
   const queryClient = useQueryClient();
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
+  const isAdmin = user?.role === 'admin';
+  
   const { data: pins = [] } = useQuery({
     queryKey: ['pins'],
     queryFn: async () => {
@@ -98,8 +100,6 @@ export default function Maps() {
     queryFn: () => base44.entities.User.list(),
     enabled: isAdmin,
   });
-
-  const isAdmin = user?.role === 'admin';
   const [userLocation, setUserLocation] = useState(null);
   const [flyTo, setFlyTo] = useState(null);
   const [selectedPin, setSelectedPin] = useState(null); // existing pin
