@@ -15,7 +15,6 @@ import Leaderboard from '@/pages/Leaderboard';
 import Payouts from '@/pages/Payouts';
 import Admin from '@/pages/Admin';
 import Reports from '@/pages/Reports';
-import Maps from '@/pages/Maps';
 import Clients from '@/pages/Clients';
 
 const AuthenticatedApp = () => {
@@ -49,7 +48,6 @@ const AuthenticatedApp = () => {
         <Route path="/payouts" element={<Payouts />} />
         <Route path="/admin" element={<Admin />} />
         <Route path="/reports" element={<Reports />} />
-        <Route path="/maps" element={<Maps />} />
         <Route path="/clients" element={<Clients />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
