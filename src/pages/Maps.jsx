@@ -138,14 +138,14 @@ export default function Maps() {
     setAddingPin(false);
     // Optimistically open drawer with coords while we reverse-geocode
     setNewPin({ lat: latlng.lat, lng: latlng.lng, status: 'knocked', notes: '', address: '' });
-    // Reverse geocode using Google Maps API for accurate street addresses
+    // Reverse geocode using Google Maps API
     try {
-      const response = await base44.functions.invoke('reverseGeocodeGoogle', { lat: latlng.lat, lng: latlng.lng });
-      if (response.data?.address) {
-        setNewPin(prev => prev ? { ...prev, address: response.data.address } : prev);
+      const res = await base44.functions.invoke('reverseGeocode', { lat: latlng.lat, lng: latlng.lng });
+      if (res.data?.address) {
+        setNewPin(prev => prev ? { ...prev, address: res.data.address } : prev);
       }
-    } catch (err) {
-      console.error('Geocoding error:', err);
+    } catch (error) {
+      console.error('Geocoding failed:', error);
     }
   }, []);
 
