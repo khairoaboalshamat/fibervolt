@@ -1,0 +1,57 @@
+{
+  "name": "RepLocation",
+  "type": "object",
+  "properties": {
+    "rep_email": {
+      "type": "string",
+      "description": "Rep email"
+    },
+    "rep_name": {
+      "type": "string",
+      "description": "Rep display name"
+    },
+    "lat": {
+      "type": "number",
+      "description": "Current latitude"
+    },
+    "lng": {
+      "type": "number",
+      "description": "Current longitude"
+    },
+    "accuracy": {
+      "type": "number",
+      "description": "GPS accuracy in meters"
+    },
+    "last_seen": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last GPS update timestamp"
+    }
+  },
+  "required": [
+    "rep_email",
+    "lat",
+    "lng"
+  ],
+  "rls": {
+    "create": {},
+    "read": {},
+    "update": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.rep_email": "{{user.email}}"
+        }
+      ]
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}
