@@ -95,7 +95,7 @@ export default function Dashboard() {
       </div>
 
       {isAdmin && (
-        <AdminOverviewCard sales={sales} users={users} />
+        <AdminOverviewCard sales={sales} users={users} repTiers={repTiers} />
       )}
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">

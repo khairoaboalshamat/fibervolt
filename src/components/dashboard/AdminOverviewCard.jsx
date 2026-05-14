@@ -1,16 +1,11 @@
 import React from 'react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
-import { TrendingUp, DollarSign, Users } from 'lucide-react';
-import { TOTAL_STACK, REP_BASE_PAY, REP_MAX_PAY, calcRepPay, calcAdminOverride } from '@/lib/commissionData';
+import { TrendingUp, Users } from 'lucide-react';
+import { TOTAL_STACK, REP_BASE_PAY, REP_MAX_PAY, calcRepPay, TIER_LABELS } from '@/lib/commissionData';
 
-export default function AdminOverviewCard({ sales, users }) {
-  // Group installed deals per rep
-  const repDealCounts = {};
-  sales.forEach(s => {
-    if (s.status === 'installed' && s.rep_email) {
-      repDealCounts[s.rep_email] = (repDealCounts[s.rep_email] || 0) + 1;
-    }
-  });
+export default function AdminOverviewCard({ sales, users, repTiers = [] }) {
+  const getRepTier = (email) => repTiers.find(t => t.rep_email === email)?.tier ?? 0;
+  const isRepAdmin = (email) => users?.find(u => u.email === email)?.role === 'admin';
 
   // Calculate totals across all installed sales
   let totalStack = 0;
@@ -18,23 +13,26 @@ export default function AdminOverviewCard({ sales, users }) {
   let totalOverride = 0;
 
   sales.filter(s => s.status === 'installed' && TOTAL_STACK[s.plan]).forEach(s => {
-    const dealCount = repDealCounts[s.rep_email] || 0;
-    const repPay = calcRepPay(s.plan, dealCount);
-    const stack = TOTAL_STACK[s.plan] || 0;
-    const override = stack - repPay;
+    const stack = TOTAL_STACK[s.plan];
+    const repPay = isRepAdmin(s.rep_email) ? stack : calcRepPay(s.plan, getRepTier(s.rep_email));
+    const override = isRepAdmin(s.rep_email) ? 0 : stack - repPay;
     totalStack += stack;
     totalRepPay += repPay;
     totalOverride += override;
   });
 
-  // Per-rep breakdown
-  const repBreakdown = Object.entries(repDealCounts).map(([email, deals]) => {
+  // Per-rep breakdown (only non-admin reps with installed deals)
+  const repEmails = [...new Set(
+    sales.filter(s => s.status === 'installed' && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email))
+      .map(s => s.rep_email)
+  )];
+
+  const repBreakdown = repEmails.map(email => {
     const repUser = users?.find(u => u.email === email);
     const name = repUser?.full_name || email;
-    // Calculate this rep's current pay tier for a sample plan (1G base)
-    const currentBase = calcRepPay('1G', deals);
-    const tierBoost = Math.floor(deals / 25) * 25;
-    return { email, name, deals, tierBoost };
+    const tier = getRepTier(email);
+    const deals = sales.filter(s => s.status === 'installed' && s.rep_email === email).length;
+    return { email, name, tier, deals };
   }).sort((a, b) => b.deals - a.deals);
 
   return (
@@ -73,12 +71,10 @@ export default function AdminOverviewCard({ sales, users }) {
                   <p className="text-xs text-muted-foreground">{r.deals} deals installed</p>
                 </div>
                 <div className="text-right">
-                  <p className="font-semibold text-foreground">
-                    Base +${r.tierBoost} boost
+                  <p className="font-semibold text-amber-500">
+                    Rep: ${calcRepPay('1G', r.tier)} (1G)
                   </p>
-                  <p className="text-xs text-muted-foreground">
-                    {r.deals >= 25 ? `Tier ${Math.floor(r.deals / 25)}` : 'Starter tier'}
-                  </p>
+                  <p className="text-xs text-muted-foreground">{TIER_LABELS[r.tier]}</p>
                 </div>
               </div>
             ))}
@@ -98,7 +94,7 @@ export default function AdminOverviewCard({ sales, users }) {
               <span className="text-accent font-semibold">${stack - REP_MAX_PAY[plan]}–${stack - REP_BASE_PAY[plan]}</span>
             </div>
           ))}
-          <p className="pt-1 text-muted-foreground/70">Rep reaches max pay at 100 deals (+$25 per 25 deals)</p>
+          <p className="pt-1 text-muted-foreground/70">Rep tier boost: +$25/tier (Tier 1–4)</p>
         </div>
       </CardContent>
     </Card>
