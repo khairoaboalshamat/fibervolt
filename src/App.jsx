@@ -17,6 +17,8 @@ import Admin from '@/pages/Admin';
 import Clients from '@/pages/Clients';
 import Territories from '@/pages/Territories';
 import Maps from '@/pages/Maps';
+import ActivityFeed from '@/pages/ActivityFeed';
+import RepReports from '@/pages/RepReports';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -51,6 +53,8 @@ const AuthenticatedApp = () => {
         <Route path="/clients" element={<Clients />} />
         <Route path="/territories" element={<Territories />} />
         <Route path="/maps" element={<Maps />} />
+        <Route path="/activity" element={<ActivityFeed />} />
+        <Route path="/reports" element={<RepReports />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

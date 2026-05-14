@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, Calendar, Trophy,
-  DollarSign, Shield, LogOut, Menu, X, Users, Map, PenLine } from 'lucide-react';
+  DollarSign, Shield, LogOut, Menu, X, Users, Map, PenLine, Activity, FileText } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 
@@ -14,7 +14,10 @@ const NAV_ITEMS = [
 { path: '/payouts', label: 'Payouts', icon: DollarSign },
 { path: '/clients', label: 'Clients', icon: Users },
 { path: '/maps', label: 'D2D Map', icon: Map },
-{ path: '/territories', label: 'Territories', icon: PenLine }];
+{ path: '/territories', label: 'Territories', icon: PenLine },
+{ path: '/activity', label: 'Activity Feed', icon: Activity },
+{ path: '/reports', label: 'Rep Reports', icon: FileText },
+];
 
 
 

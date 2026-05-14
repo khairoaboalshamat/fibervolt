@@ -1,0 +1,63 @@
+{
+  "name": "ActivityLog",
+  "type": "object",
+  "properties": {
+    "rep_email": {
+      "type": "string"
+    },
+    "rep_name": {
+      "type": "string"
+    },
+    "action": {
+      "type": "string",
+      "enum": [
+        "pin_created",
+        "pin_updated",
+        "sale_created",
+        "sale_updated"
+      ],
+      "description": "Type of activity"
+    },
+    "detail": {
+      "type": "string",
+      "description": "Human-readable description"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of the affected entity"
+    },
+    "meta": {
+      "type": "object",
+      "description": "Extra data (status, plan, etc)"
+    }
+  },
+  "required": [
+    "rep_email",
+    "action"
+  ],
+  "rls": {
+    "create": {},
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.rep_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

@@ -77,9 +77,16 @@ export default function NewSale() {
       });
       return sale;
     },
-    onSuccess: () => {
+    onSuccess: (sale) => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
       queryClient.invalidateQueries({ queryKey: ['clients'] });
+      base44.entities.ActivityLog.create({
+        rep_email: sale.rep_email,
+        rep_name: sale.rep_name,
+        action: 'sale_created',
+        detail: `Submitted sale for ${sale.customer_name} — ${sale.plan} plan`,
+        meta: { plan: sale.plan, commission: `$${sale.commission_amount}` },
+      }).catch(() => {});
       navigate('/');
     }
   });

@@ -11,6 +11,7 @@ import { Upload, Locate, MapPin, Eye, EyeOff, Layers } from 'lucide-react';
 import { PIN_STATUSES, getStatus } from '@/components/maps/PinStatusBadge';
 import PinPopup from '@/components/maps/PinPopup';
 import MapKPIs from '@/components/maps/MapKPIs';
+import RouteOptimizer from '@/components/maps/RouteOptimizer';
 import * as XLSX from 'xlsx';
 
 // Fix default leaflet marker icons
@@ -125,12 +126,26 @@ export default function Maps() {
     setNewPin({ lat: latlng.lat, lng: latlng.lng, status: 'lead', notes: '', address: '' });
   }, []);
 
+  const logActivity = (action, detail, meta = {}) => {
+    base44.entities.ActivityLog.create({
+      rep_email: user?.email,
+      rep_name: user?.full_name || user?.email,
+      action,
+      detail,
+      meta,
+    }).catch(() => {});
+  };
+
   const handleSaveNewPin = (pinData) => {
     createPin.mutate({
       ...pinData,
       rep_email: user?.email,
       rep_name: user?.full_name || user?.email,
       source: 'manual',
+    }, {
+      onSuccess: (created) => {
+        logActivity('pin_created', `Dropped a pin at ${pinData.address || `${pinData.lat.toFixed(4)}, ${pinData.lng.toFixed(4)}`}`, { status: pinData.status });
+      }
     });
   };
 
@@ -145,6 +160,10 @@ export default function Maps() {
         email: pinData.email,
         fiber_status: pinData.fiber_status,
         follow_up_date: pinData.follow_up_date,
+      }
+    }, {
+      onSuccess: () => {
+        logActivity('pin_updated', `Updated pin at ${pinData.address || 'location'} → ${pinData.status}`, { status: pinData.status });
       }
     });
   };
@@ -322,6 +341,9 @@ export default function Maps() {
               </Marker>
             )}
           </MapContainer>
+
+          {/* Route Optimizer panel */}
+          <RouteOptimizer pins={visiblePins} userLocation={userLocation} />
 
           {/* Legend */}
           {showLegend && (
