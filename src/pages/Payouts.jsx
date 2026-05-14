@@ -64,16 +64,19 @@ export default function Payouts() {
 
   const pipelineTotal = pipeline.reduce((sum, x) => sum + getSaleValue(x), 0);
   // For admins: awaiting shows 80% immediate + 20% deferred (3 months)
-  const awaitingImmediate = isAdmin
-    ? awaiting.reduce((sum, x) => sum + Math.round(getAdminSaleValue(x) * 0.8), 0)
-    : awaiting.reduce((sum, x) => sum + getSaleValue(x), 0);
-  const awaitingDeferred = isAdmin
-    ? awaiting.reduce((sum, x) => sum + Math.round(getAdminSaleValue(x) * 0.2), 0)
-    : 0;
+  const awaitingImmediate = awaiting.reduce((sum, x) => {
+    const val = getSaleValue(x);
+    return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
+  }, 0);
+  const awaitingDeferred = awaiting.reduce((sum, x) => {
+    const val = getSaleValue(x);
+    return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.2) : 0);
+  }, 0);
   const awaitingTotal = awaitingImmediate + awaitingDeferred;
-  const paidTotal = isAdmin
-    ? paid.reduce((sum, x) => sum + Math.round(getSaleValue(x) * 0.8), 0)
-    : paid.reduce((sum, x) => sum + getSaleValue(x), 0);
+  const paidTotal = paid.reduce((sum, x) => {
+    const val = getSaleValue(x);
+    return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
+  }, 0);
 
   const plans = rates.filter(r => r.type === 'plan');
   const addons = rates.filter(r => r.type === 'addon');
@@ -85,7 +88,7 @@ export default function Payouts() {
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <StatCard label="Pipeline" value={`$${pipelineTotal.toLocaleString()}`} icon={TrendingUp} accent="blue" />
-        {isAdmin ? (
+        {awaitingDeferred > 0 ? (
           <div className="rounded-xl border bg-card shadow p-4 flex flex-col gap-1">
             <div className="flex items-center gap-2 mb-1">
               <Clock className="w-4 h-4 text-amber-500" />
@@ -137,7 +140,7 @@ export default function Payouts() {
 
         <TabsContent value="awaiting">
           <Card>
-            {isAdmin && awaiting.length > 0 && (
+            {awaitingDeferred > 0 && awaiting.length > 0 && (
               <CardHeader className="pb-2 pt-4">
                 <div className="flex gap-4 text-sm">
                   <span className="text-muted-foreground">Your 80% now: <span className="font-semibold text-foreground">${awaitingImmediate.toLocaleString()}</span></span>
@@ -151,16 +154,17 @@ export default function Payouts() {
               ) : (
                 <div className="divide-y divide-border">
                   {awaiting.map(s => {
-                    const adminVal = getAdminSaleValue(s);
-                    const immediate = isAdmin ? Math.round(adminVal * 0.8) : null;
-                    const deferred = isAdmin ? Math.round(adminVal * 0.2) : null;
+                    const val = getSaleValue(s);
+                    const isRepAdminFlag = isRepAdmin(s.rep_email);
+                    const immediate = isRepAdminFlag ? Math.round(val * 0.8) : null;
+                    const deferred = isRepAdminFlag ? Math.round(val * 0.2) : null;
                     return (
                       <div key={s.id}>
-                        <SaleRow sale={s} displayValue={getSaleValue(s)} showRep={isAdmin}
-                          repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
-                          override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                        <SaleRow sale={s} displayValue={val} showRep={isAdmin}
+                          repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdminFlag ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                          override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdminFlag ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
                         />
-                        {isAdmin && (
+                        {immediate !== null && (
                           <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground">
                             <span>Your pay: <span className="font-semibold text-foreground">${immediate.toLocaleString()} now</span></span>
                             <span className="text-amber-500 font-medium">+ ${deferred.toLocaleString()} in 3 months</span>
@@ -182,12 +186,16 @@ export default function Payouts() {
                 <p className="text-sm text-muted-foreground py-6 text-center">No paid sales</p>
               ) : (
                 <div className="divide-y divide-border">
-                  {paid.map(s => (
-                    <SaleRow key={s.id} sale={s} displayValue={isAdmin ? Math.round(getSaleValue(s) * 0.8) : getSaleValue(s)} showRep={isAdmin}
-                      repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
-                      override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
-                    />
-                  ))}
+                  {paid.map(s => {
+                    const val = getSaleValue(s);
+                    const isRepAdminFlag = isRepAdmin(s.rep_email);
+                    return (
+                      <SaleRow key={s.id} sale={s} displayValue={isRepAdminFlag ? Math.round(val * 0.8) : val} showRep={isAdmin}
+                        repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdminFlag ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                        override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdminFlag ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                      />
+                    );
+                  })}
                 </div>
               )}
             </CardContent>
