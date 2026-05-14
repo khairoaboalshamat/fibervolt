@@ -6,12 +6,15 @@ import 'leaflet.markercluster/dist/MarkerCluster.Default.css';
 import { getStatus } from '@/components/maps/PinStatusBadge';
 
 function createColorIcon(color) {
+  const size = 30;
   return L.divIcon({
     className: '',
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-    popupAnchor: [0, -10],
+    html: `<svg viewBox="0 0 24 32" width="${size}" height="${size + 10}" xmlns="http://www.w3.org/2000/svg">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 8 12 20 12 20S24 20 24 12C24 5.37 18.63 0 12 0z" fill="${color}" stroke="white" stroke-width="1.5"/>
+      <circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/>
+    </svg>`,
+    iconSize: [size, size + 10],
+    iconAnchor: [size / 2, size + 10],
   });
 }
 

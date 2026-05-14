@@ -14,6 +14,7 @@ import OfflineBanner from '@/components/maps/OfflineBanner';
 import { addToOfflineQueue, flushOfflineQueue } from '@/lib/offlinePins';
 import * as XLSX from 'xlsx';
 import MapPinDrawer from '@/components/maps/MapPinDrawer';
+import ClusteredPins from '@/components/maps/ClusteredPins';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
