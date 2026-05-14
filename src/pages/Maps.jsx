@@ -142,13 +142,8 @@ export default function Maps() {
     fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json&zoom=18`)
       .then(r => r.json())
       .then(data => {
-        // Build address from street + city + state for better specificity
-        const parts = [];
-        if (data.address?.house_number) parts.push(data.address.house_number);
-        if (data.address?.road) parts.push(data.address.road);
-        if (data.address?.city) parts.push(data.address.city);
-        if (data.address?.state) parts.push(data.address.state);
-        const address = parts.length > 1 ? parts.join(', ') : data.display_name?.split(',').slice(0, 4).join(',').trim() || '';
+        // Use display_name but take more detail (first 6 parts gives street, city, county, state, country, etc.)
+        const address = data.display_name?.split(',').slice(0, 6).join(',').trim() || '';
         setNewPin(prev => prev ? { ...prev, address } : prev);
       })
       .catch(() => {});
