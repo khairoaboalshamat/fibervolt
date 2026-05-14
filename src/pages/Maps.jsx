@@ -11,8 +11,8 @@ import { PIN_STATUSES } from '@/components/maps/PinStatusBadge';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
 import OfflineBanner from '@/components/maps/OfflineBanner';
-import { addToOfflineQueue, flushOfflineQueue, flushSyncQueue, addToSyncQueue, getSyncQueue, cachePins, getPinCache } from '@/lib/offlinePins';
-import { initOfflineSync, isOnline, getOfflineQueueSize, syncOfflineQueue, getSyncQueueItems } from '@/lib/offlineSync';
+import { cachePins, getPinCache } from '@/lib/offlinePins';
+import { initOfflineSync, syncOfflineQueue } from '@/lib/offlineSync';
 import * as XLSX from 'xlsx';
 import MapPinDrawer from '@/components/maps/MapPinDrawer';
 import TerritoryDrawer from '@/components/maps/TerritoryDrawer';
@@ -203,12 +203,6 @@ export default function Maps() {
   const handleSave = (pinData) => {
     if (pinData.id) {
       // update existing pin
-      if (!navigator.onLine) {
-        // Queue the update for sync when online
-        addToSyncQueue('update', { id: pinData.id, data: pinData });
-        setSelectedPin(null);
-        return;
-      }
       updatePin.mutate({ id: pinData.id, data: pinData }, {
         onSuccess: () => {
           logActivity('pin_updated', `Updated ${pinData.address || 'pin'} → ${pinData.status}`, { status: pinData.status });
@@ -218,11 +212,6 @@ export default function Maps() {
     } else {
       // new pin
       const fullPin = { ...pinData, rep_email: user?.email, rep_name: user?.full_name || user?.email, source: 'manual' };
-      if (!navigator.onLine) {
-        addToOfflineQueue(fullPin);
-        setNewPin(null);
-        return;
-      }
       createPin.mutate(fullPin, {
         onSuccess: () => {
           logActivity('pin_created', `Dropped pin at ${pinData.address || `${pinData.lat?.toFixed(4)}, ${pinData.lng?.toFixed(4)}`}`, { status: pinData.status });
