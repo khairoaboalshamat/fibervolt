@@ -11,7 +11,6 @@ const NAV_ITEMS = [
 { path: '/new-sale', label: 'New Sale', icon: PlusCircle },
 { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
 { path: '/maps', label: 'Map', icon: Map },
-{ path: '/territories', label: 'Territories', icon: PenLine },
 { path: '/activity', label: 'Activity Feed', icon: Activity },
 { path: '/reports', label: 'Rep Reports', icon: FileText },
 ];
