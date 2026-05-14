@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,7 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Locate, MapPin, Eye, EyeOff } from 'lucide-react';
+import { Upload, Locate, MapPin, Eye, EyeOff, Layers } from 'lucide-react';
 import { PIN_STATUSES, getStatus } from '@/components/maps/PinStatusBadge';
 import PinPopup from '@/components/maps/PinPopup';
 import MapKPIs from '@/components/maps/MapKPIs';
@@ -67,6 +67,11 @@ export default function Maps() {
     queryKey: ['sales'],
     queryFn: () => base44.entities.Sale.list('-created_date', 500),
   });
+  const { data: territories = [] } = useQuery({
+    queryKey: ['territories'],
+    queryFn: () => base44.entities.Territory.list('-created_date', 200),
+  });
+  const [showTerritories, setShowTerritories] = useState(true);
 
   const isAdmin = user?.role === 'admin';
 
@@ -213,6 +218,9 @@ export default function Maps() {
             <Upload className="h-4 w-4 mr-1" /> {uploading ? 'Uploading...' : 'Upload Excel'}
           </Button>
           <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleExcelUpload} />
+          <Button variant={showTerritories ? 'secondary' : 'ghost'} size="sm" onClick={() => setShowTerritories(v => !v)} title="Toggle territories">
+            <Layers className="h-4 w-4 mr-1" /> Territories
+          </Button>
           <Button variant="ghost" size="sm" onClick={() => setShowLegend(v => !v)}>
             {showLegend ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
           </Button>
@@ -259,6 +267,22 @@ export default function Maps() {
             />
             <ClickHandler onMapClick={handleMapClick} />
             {flyTo && <FlyToLocation location={flyTo} />}
+
+            {/* Territory overlays */}
+            {showTerritories && territories.filter(t => t.status === 'active' && t.coordinates?.length > 2).map(t => (
+              <Polygon
+                key={t.id}
+                positions={t.coordinates.map(c => [c.lat, c.lng])}
+                pathOptions={{ color: t.color || '#3b82f6', fillColor: t.color || '#3b82f6', fillOpacity: 0.1, weight: 2 }}
+              >
+                <Popup>
+                  <div className="text-sm space-y-0.5">
+                    <p className="font-semibold">{t.name}</p>
+                    {t.assigned_rep_name && <p className="text-xs text-muted-foreground">Rep: {t.assigned_rep_name}</p>}
+                  </div>
+                </Popup>
+              </Polygon>
+            ))}
 
             {/* Live user location */}
             {userLocation && (

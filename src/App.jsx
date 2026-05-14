@@ -16,6 +16,7 @@ import Payouts from '@/pages/Payouts';
 import Admin from '@/pages/Admin';
 import Clients from '@/pages/Clients';
 import Territories from '@/pages/Territories';
+import Maps from '@/pages/Maps';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -49,6 +50,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/clients" element={<Clients />} />
         <Route path="/territories" element={<Territories />} />
+        <Route path="/maps" element={<Maps />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>

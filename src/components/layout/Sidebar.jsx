@@ -13,6 +13,7 @@ const NAV_ITEMS = [
 { path: '/leaderboard', label: 'Leaderboard', icon: Trophy },
 { path: '/payouts', label: 'Payouts', icon: DollarSign },
 { path: '/clients', label: 'Clients', icon: Users },
+{ path: '/maps', label: 'D2D Map', icon: Map },
 { path: '/territories', label: 'Territories', icon: PenLine }];
 
 
