@@ -32,6 +32,7 @@ export default function AppLayout({ user }) {
           >
             <Menu className="h-5 w-5" />
           </Button>
+          <span className="text-lg font-bold tracking-tight text-foreground">Fiber Volt</span>
           <div className="flex-1" />
 
         </header>
