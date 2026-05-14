@@ -84,7 +84,7 @@ export default function SaleDetail() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <Button variant="ghost" className="gap-2" onClick={() => navigate(-1)}>
+      <Button variant="ghost" className="gap-2" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/')}>
         <ArrowLeft className="h-4 w-4" /> Back
       </Button>
 
