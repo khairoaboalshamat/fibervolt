@@ -40,6 +40,11 @@ export function calcRepPay(plan, tier = 0) {
   return base + boost;
 }
 
+// Admin pay = full total stack (no tier boost)
+export function calcAdminPay(plan) {
+  return TOTAL_STACK[plan] || 0;
+}
+
 // Admin override = total stack - rep pay
 export function calcAdminOverride(plan, tier = 0) {
   const stack = TOTAL_STACK[plan];

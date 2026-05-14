@@ -7,7 +7,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DollarSign, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 import StatCard from '@/components/dashboard/StatCard';
 import SaleRow from '@/components/dashboard/SaleRow';
-import { TOTAL_STACK, calcRepPay, calcAdminOverride } from '@/lib/commissionData';
+import { TOTAL_STACK, calcRepPay, calcAdminPay, calcAdminOverride } from '@/lib/commissionData';
 
 export default function Payouts() {
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -38,7 +38,14 @@ export default function Payouts() {
   // For admins, use TOTAL_STACK; for reps use their saved commission_amount
   const getSaleValue = (s) => isAdmin ? (TOTAL_STACK[s.plan] || s.commission_amount || 0) : (s.commission_amount || 0);
 
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: isAdmin,
+  });
+
   const getRepTier = (email) => repTiers.find(t => t.rep_email === email)?.tier || 0;
+  const isRepAdmin = (email) => users.find(u => u.email === email)?.role === 'admin';
 
   const pipeline = mySales.filter(s => ['pending', 'scheduled'].includes(s.status));
   const awaiting = mySales.filter(s => s.status === 'installed' && !s.paid);
@@ -79,8 +86,8 @@ export default function Payouts() {
                 <div className="divide-y divide-border">
                   {pipeline.map(s => (
                     <SaleRow key={s.id} sale={s} displayValue={getSaleValue(s)} showRep={isAdmin}
-                      repPay={isAdmin && TOTAL_STACK[s.plan] ? calcRepPay(s.plan, getRepTier(s.rep_email)) : null}
-                      override={isAdmin && TOTAL_STACK[s.plan] ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                      repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                      override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
                     />
                   ))}
                 </div>
@@ -98,8 +105,8 @@ export default function Payouts() {
                 <div className="divide-y divide-border">
                   {awaiting.map(s => (
                     <SaleRow key={s.id} sale={s} displayValue={getSaleValue(s)} showRep={isAdmin}
-                      repPay={isAdmin && TOTAL_STACK[s.plan] ? calcRepPay(s.plan, getRepTier(s.rep_email)) : null}
-                      override={isAdmin && TOTAL_STACK[s.plan] ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                      repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                      override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
                     />
                   ))}
                 </div>
@@ -117,8 +124,8 @@ export default function Payouts() {
                 <div className="divide-y divide-border">
                   {paid.map(s => (
                     <SaleRow key={s.id} sale={s} displayValue={getSaleValue(s)} showRep={isAdmin}
-                      repPay={isAdmin && TOTAL_STACK[s.plan] ? calcRepPay(s.plan, getRepTier(s.rep_email)) : null}
-                      override={isAdmin && TOTAL_STACK[s.plan] ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                      repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                      override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
                     />
                   ))}
                 </div>

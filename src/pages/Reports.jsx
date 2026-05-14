@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { BarChart2, Download, Filter } from 'lucide-react';
 import { format, parseISO, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
-import { TOTAL_STACK, calcRepPay } from '@/lib/commissionData';
+import { TOTAL_STACK, calcRepPay, calcAdminPay } from '@/lib/commissionData';
 
 export default function Reports() {
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
@@ -57,13 +57,17 @@ export default function Reports() {
   const rows = useMemo(() => {
     return filteredSales.map(s => {
       const stack = TOTAL_STACK[s.plan] || s.commission_amount || 0;
+      const repUser = users.find(u => u.email === s.rep_email);
+      const isRepAdmin = repUser?.role === 'admin';
       const tierRecord = repTiers.find(t => t.rep_email === s.rep_email);
       const tier = tierRecord?.tier ?? 0;
-      const repPay = TOTAL_STACK[s.plan] ? calcRepPay(s.plan, tier) : (s.commission_amount || 0);
-      const override = stack - repPay;
+      const repPay = TOTAL_STACK[s.plan]
+        ? (isRepAdmin ? calcAdminPay(s.plan) : calcRepPay(s.plan, tier))
+        : (s.commission_amount || 0);
+      const override = isRepAdmin ? 0 : stack - repPay;
       return { ...s, stack, repPay, override };
     });
-  }, [filteredSales, repTiers]);
+  }, [filteredSales, repTiers, users]);
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
     stack: acc.stack + (r.status === 'installed' ? r.stack : 0),

@@ -5,7 +5,7 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Trophy, ShoppingCart, Wrench } from 'lucide-react';
 import { startOfWeek, startOfMonth, isAfter } from 'date-fns';
-import { calcRepPay, TOTAL_STACK } from '@/lib/commissionData';
+import { calcRepPay, calcAdminPay, TOTAL_STACK } from '@/lib/commissionData';
 
 export default function Leaderboard() {
   const [period, setPeriod] = useState('month');
@@ -20,6 +20,12 @@ export default function Leaderboard() {
   const { data: repTiers = [] } = useQuery({
     queryKey: ['repTiers'],
     queryFn: () => base44.entities.RepTier.list(),
+  });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['users'],
+    queryFn: () => base44.entities.User.list(),
+    enabled: user?.role === 'admin',
   });
 
   const cutoff = useMemo(() => {
@@ -47,9 +53,13 @@ export default function Leaderboard() {
       const key = s.rep_email;
       if (!map[key]) map[key] = { email: key, name: s.rep_name || key, sales: 0, installs: 0, commission: 0 };
       map[key].sales++;
+      const repUser = users.find(u => u.email === s.rep_email);
+      const isRepAdmin = repUser?.role === 'admin' || (s.rep_email === user?.email && user?.role === 'admin');
       const tierRecord = repTiers.find(t => t.rep_email === s.rep_email);
       const tier = tierRecord?.tier ?? 0;
-      const repPay = TOTAL_STACK[s.plan] ? calcRepPay(s.plan, tier) : (s.commission_amount || 0);
+      const repPay = TOTAL_STACK[s.plan]
+        ? (isRepAdmin ? calcAdminPay(s.plan) : calcRepPay(s.plan, tier))
+        : (s.commission_amount || 0);
       map[key].commission += repPay;
     });
     filteredInstalls.forEach(s => {
@@ -58,7 +68,7 @@ export default function Leaderboard() {
       map[key].installs++;
     });
     return Object.values(map).sort((a, b) => b.sales - a.sales);
-  }, [filteredSales, filteredInstalls, repTiers]);
+  }, [filteredSales, filteredInstalls, repTiers, users, user]);
 
   const podiumColors = [
     'from-amber-400 to-amber-600',
