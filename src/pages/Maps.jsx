@@ -12,6 +12,10 @@ import { PIN_STATUSES, getStatus } from '@/components/maps/PinStatusBadge';
 import PinPopup from '@/components/maps/PinPopup';
 import MapKPIs from '@/components/maps/MapKPIs';
 import { RouteOverlay, RoutePanel } from '@/components/maps/RouteOptimizer';
+import RepTracker from '@/components/maps/RepTracker';
+import LiveRepDots from '@/components/maps/LiveRepDots';
+import OfflineBanner from '@/components/maps/OfflineBanner';
+import { addToOfflineQueue, flushOfflineQueue } from '@/lib/offlinePins';
 import * as XLSX from 'xlsx';
 
 // Fix default leaflet marker icons
@@ -138,16 +142,29 @@ export default function Maps() {
   };
 
   const handleSaveNewPin = (pinData) => {
-    createPin.mutate({
+    const fullPin = {
       ...pinData,
       rep_email: user?.email,
       rep_name: user?.full_name || user?.email,
       source: 'manual',
-    }, {
-      onSuccess: (created) => {
+    };
+
+    if (!navigator.onLine) {
+      addToOfflineQueue(fullPin);
+      setNewPin(null);
+      return;
+    }
+
+    createPin.mutate(fullPin, {
+      onSuccess: () => {
         logActivity('pin_created', `Dropped a pin at ${pinData.address || `${pinData.lat.toFixed(4)}, ${pinData.lng.toFixed(4)}`}`, { status: pinData.status });
       }
     });
+  };
+
+  const handleOfflineSync = async () => {
+    await flushOfflineQueue((pin) => base44.entities.MapPin.create(pin));
+    queryClient.invalidateQueries({ queryKey: ['pins'] });
   };
 
   const handleUpdatePin = (pinData) => {
@@ -247,6 +264,9 @@ export default function Maps() {
         </div>
       </div>
 
+      {/* Offline banner */}
+      <OfflineBanner onSync={handleOfflineSync} />
+
       {/* KPIs */}
       <MapKPIs pins={pins} sales={sales} userEmail={user?.email} />
 
@@ -273,6 +293,9 @@ export default function Maps() {
         </span>
       </div>
 
+      {/* Rep GPS tracker (silent background component) */}
+      <RepTracker user={user} />
+
       {/* Map */}
       <Card className="overflow-hidden p-0">
         <div style={{ height: 'calc(100vh - 340px)', minHeight: '420px', width: '100%', position: 'relative' }}>
@@ -290,6 +313,9 @@ export default function Maps() {
 
             {/* Route overlay */}
             <RouteOverlay pins={visiblePins} userLocation={userLocation} active={routeActive} />
+
+            {/* Live rep dots (admin only) */}
+            {isAdmin && <LiveRepDots currentUserEmail={user?.email} />}
 
             {/* Territory overlays */}
             {showTerritories && territories.filter(t => t.status === 'active' && t.coordinates?.length > 2).map(t => (
