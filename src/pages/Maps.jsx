@@ -138,15 +138,15 @@ export default function Maps() {
     setAddingPin(false);
     // Optimistically open drawer with coords while we reverse-geocode
     setNewPin({ lat: latlng.lat, lng: latlng.lng, status: 'knocked', notes: '', address: '' });
-    // Reverse geocode using Nominatim with zoom level for street detail
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json&zoom=18`)
-      .then(r => r.json())
-      .then(data => {
-        // Use display_name but take more detail (first 6 parts gives street, city, county, state, country, etc.)
-        const address = data.display_name?.split(',').slice(0, 6).join(',').trim() || '';
-        setNewPin(prev => prev ? { ...prev, address } : prev);
-      })
-      .catch(() => {});
+    // Reverse geocode using Google Maps API for accurate street addresses
+    try {
+      const response = await base44.functions.invoke('reverseGeocodeGoogle', { lat: latlng.lat, lng: latlng.lng });
+      if (response.data?.address) {
+        setNewPin(prev => prev ? { ...prev, address: response.data.address } : prev);
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err);
+    }
   }, []);
 
   const handleSave = (pinData) => {
