@@ -1,6 +1,7 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import PullToRefresh from '@/components/PullToRefresh';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { DollarSign, TrendingUp, Clock, CheckCircle2, CalendarDays, Calendar, Users, ChevronRight } from 'lucide-react';
 import { Link } from 'react-router-dom';
@@ -15,6 +16,7 @@ import { format, addDays, isWithinInterval, startOfDay, endOfDay } from 'date-fn
 import { TOTAL_STACK, calcAdminPay, calcRepPay } from '@/lib/commissionData';
 
 export default function Dashboard() {
+  const queryClient = useQueryClient();
   const { data: user } = useQuery({
     queryKey: ['me'],
     queryFn: () => base44.auth.me(),
@@ -80,8 +82,16 @@ export default function Dashboard() {
     );
   }
 
+  const handleRefresh = async () => {
+    await queryClient.refetchQueries({ queryKey: ['me'] });
+    await queryClient.refetchQueries({ queryKey: ['sales'] });
+    await queryClient.refetchQueries({ queryKey: ['users'] });
+    await queryClient.refetchQueries({ queryKey: ['rep_tiers'] });
+  };
+
   return (
-    <div className="space-y-6">
+    <PullToRefresh onRefresh={handleRefresh} isLoading={isLoading}>
+      <div className="space-y-6">
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Dashboard</h1>
         <p className="text-muted-foreground text-sm mt-1">
@@ -181,7 +191,8 @@ export default function Dashboard() {
             </div>
           )}
         </CardContent>
-      </Card>
-    </div>
-  );
-}
+        </Card>
+        </div>
+        </PullToRefresh>
+        );
+        }

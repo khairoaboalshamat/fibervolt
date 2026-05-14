@@ -7,6 +7,9 @@ module.exports = {
   		fontFamily: {
   			sans: ['var(--font-sans)', 'system-ui', 'sans-serif']
   		},
+  		spacing: {
+  			'safe': 'env(safe-area-inset-top)',
+  		},
   		borderRadius: {
   			lg: 'var(--radius)',
   			md: 'calc(var(--radius) - 2px)',

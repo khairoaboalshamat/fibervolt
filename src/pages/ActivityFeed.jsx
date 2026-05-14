@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import PullToRefresh from '@/components/PullToRefresh';
 import { Activity, MapPin, DollarSign, RefreshCw } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -47,9 +48,14 @@ export default function ActivityFeed() {
     return true;
   });
 
+  const handleRefresh = async () => {
+    await queryClient.refetchQueries({ queryKey: ['activity_logs'] });
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
+    <PullToRefresh onRefresh={handleRefresh} isLoading={isLoading}>
+      <div className="space-y-6">
+        <div className="flex items-center justify-between flex-wrap gap-3">
         <div>
           <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
             <Activity className="h-6 w-6 text-primary" /> Activity Feed
@@ -124,6 +130,7 @@ export default function ActivityFeed() {
           })}
         </div>
       )}
-    </div>
+      </div>
+    </PullToRefresh>
   );
 }

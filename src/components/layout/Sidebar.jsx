@@ -5,6 +5,7 @@ import {
   DollarSign, Shield, LogOut, Menu, X, Users, Map, PenLine, Activity, FileText } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
+import DeleteAccountDialog from './DeleteAccountDialog';
 
 const NAV_ITEMS = [
 { path: '/', label: 'Dashboard', icon: LayoutDashboard },
@@ -84,22 +85,23 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
           })}
         </nav>
 
-        <div className="p-3 border-t border-sidebar-border">
+        <div className="p-3 border-t border-sidebar-border space-y-2">
           {!collapsed &&
-          <div className="px-3 py-2 mb-2">
+          <div className="px-3 py-2">
               <p className="text-xs text-sidebar-foreground/60 truncate">{user?.full_name || user?.email}</p>
               <p className="text-xs text-sidebar-foreground/40 truncate">{user?.role === 'admin' ? 'Admin' : 'Rep'}</p>
             </div>
           }
           <button
             onClick={handleLogout}
-            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full
+            className={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium w-full select-none
               text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all
               ${collapsed ? 'justify-center' : ''}`}>
             
             <LogOut className="h-5 w-5 shrink-0" />
             {!collapsed && <span>Log Out</span>}
           </button>
+          {!collapsed && <DeleteAccountDialog />}
         </div>
       </aside>
     </>);

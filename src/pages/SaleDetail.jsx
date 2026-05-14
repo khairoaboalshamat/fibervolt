@@ -6,7 +6,9 @@ import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { ArrowLeft, User, CalendarDays, DollarSign, Package, FileText } from 'lucide-react';
+import MobileHeader from '@/components/layout/MobileHeader';
+import { useIsMobile } from '@/hooks/use-mobile';
+import { User, CalendarDays, DollarSign, Package, FileText } from 'lucide-react';
 import { TOTAL_STACK, calcAdminPay, calcRepPay } from '@/lib/commissionData';
 import { format } from 'date-fns';
 
@@ -22,6 +24,7 @@ export default function SaleDetail() {
   const saleId = window.location.pathname.split('/sale/')[1];
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
 
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const isAdmin = user?.role === 'admin';
@@ -82,12 +85,16 @@ export default function SaleDetail() {
   const displayCommission = getDisplayCommission();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <Button variant="ghost" className="gap-2" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/')}>
-        <ArrowLeft className="h-4 w-4" /> Back
-      </Button>
+    <>
+      {isMobile && <MobileHeader title={sale.customer_name} />}
+      <div className={`${isMobile ? 'p-4 pb-20' : 'max-w-2xl mx-auto'} space-y-6`}>
+        {!isMobile && (
+          <Button variant="ghost" className="gap-2" onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/')}>
+            ← Back
+          </Button>
+        )}
 
-      <div className="flex items-start justify-between">
+        <div className="flex items-start justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">{sale.customer_name}</h1>
           <p className="text-muted-foreground text-sm mt-1">{sale.btn}</p>
@@ -198,6 +205,7 @@ export default function SaleDetail() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </>
   );
 }
