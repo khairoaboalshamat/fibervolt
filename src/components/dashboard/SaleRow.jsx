@@ -10,7 +10,8 @@ const statusColors = {
   cancelled: 'bg-destructive/10 text-destructive border-destructive/20',
 };
 
-export default function SaleRow({ sale }) {
+export default function SaleRow({ sale, displayValue, showRep, repPay, override }) {
+  const value = displayValue !== undefined ? displayValue : (sale.commission_amount || 0);
   return (
     <Link
       to={`/sale/${sale.id}`}
@@ -21,11 +22,21 @@ export default function SaleRow({ sale }) {
           {sale.customer_name}
         </p>
         <p className="text-xs text-muted-foreground mt-0.5">
-          {sale.plan} · {sale.install_date ? format(new Date(sale.install_date), 'MMM d') : '—'}
+          {showRep && sale.rep_name ? `${sale.rep_name} · ` : ''}{sale.plan} · {sale.install_date ? format(new Date(sale.install_date), 'MMM d') : '—'}
         </p>
       </div>
       <div className="flex items-center gap-3 ml-3">
-        <span className="text-sm font-semibold">${sale.commission_amount || 0}</span>
+        <div className="text-right">
+          <p className="text-sm font-semibold">${value}</p>
+          {repPay !== null && repPay !== undefined && (
+            <p className="text-xs text-muted-foreground">
+              Rep: <span className="text-amber-500">${repPay}</span>
+              {override !== null && override !== undefined && (
+                <> · Override: <span className="text-accent">${override}</span></>
+              )}
+            </p>
+          )}
+        </div>
         <Badge variant="outline" className={`text-xs ${statusColors[sale.status] || ''}`}>
           {sale.status}
         </Badge>

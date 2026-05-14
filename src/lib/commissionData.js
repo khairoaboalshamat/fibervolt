@@ -32,21 +32,19 @@ export const REP_MAX_PAY = {
   "1G": 250,
 };
 
-// Rep boost: +$25 every 25 deals, max at 100 deals (4 tiers)
-export function calcRepPay(plan, totalInstalledDeals) {
+// Rep pay = base + tier boost (tier is 0-4)
+export function calcRepPay(plan, tier = 0) {
   const base = REP_BASE_PAY[plan];
-  const max = REP_MAX_PAY[plan];
   if (base === undefined) return 0;
-  const boostTiers = Math.min(Math.floor(totalInstalledDeals / 25), 4);
-  const boosted = base + boostTiers * 25;
-  return Math.min(boosted, max);
+  const boost = TIER_BOOST[tier] ?? 0;
+  return base + boost;
 }
 
 // Admin override = total stack - rep pay
-export function calcAdminOverride(plan, totalInstalledDeals) {
+export function calcAdminOverride(plan, tier = 0) {
   const stack = TOTAL_STACK[plan];
   if (stack === undefined) return 0;
-  return stack - calcRepPay(plan, totalInstalledDeals);
+  return stack - calcRepPay(plan, tier);
 }
 
 export const DEFAULT_ADDONS = [
