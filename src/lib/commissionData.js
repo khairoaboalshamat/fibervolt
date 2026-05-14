@@ -56,6 +56,7 @@ export const DEFAULT_ADDONS = [
   { name: "Whole Home Wi-Fi", monthly_price: 0, commission: 10 },
   { name: "Whole Home Wi-Fi Plus", monthly_price: 0, commission: 10 },
   { name: "Wi-Fi Security", monthly_price: 0, commission: 5 },
+  { name: "Wi-Fi Security Plus", monthly_price: 0, commission: 10 },
   { name: "Unbreakable Wi-Fi", monthly_price: 0, commission: 20 },
   { name: "Premium Tech Support", monthly_price: 0, commission: 10 },
   { name: "Total Shield", monthly_price: 0, commission: 10 },
