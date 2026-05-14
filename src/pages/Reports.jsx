@@ -20,6 +20,10 @@ export default function Reports() {
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list(),
   });
+  const { data: repTiers = [] } = useQuery({
+    queryKey: ['repTiers'],
+    queryFn: () => base44.entities.RepTier.list(),
+  });
 
   const isAdmin = user?.role === 'admin';
 
@@ -28,16 +32,6 @@ export default function Reports() {
   const [dateTo, setDateTo] = useState('');
   const [repFilter, setRepFilter] = useState('all');
   const [planFilter, setPlanFilter] = useState('all');
-
-  const repDealCounts = useMemo(() => {
-    const counts = {};
-    sales.forEach(s => {
-      if (s.status === 'installed' && s.rep_email) {
-        counts[s.rep_email] = (counts[s.rep_email] || 0) + 1;
-      }
-    });
-    return counts;
-  }, [sales]);
 
   const allPlans = useMemo(() => [...new Set(sales.map(s => s.plan).filter(Boolean))], [sales]);
   const allReps = useMemo(() => {
@@ -63,11 +57,13 @@ export default function Reports() {
   const rows = useMemo(() => {
     return filteredSales.map(s => {
       const stack = TOTAL_STACK[s.plan] || s.commission_amount || 0;
-      const repPay = TOTAL_STACK[s.plan] ? calcRepPay(s.plan, repDealCounts[s.rep_email] || 0) : (s.commission_amount || 0);
+      const tierRecord = repTiers.find(t => t.rep_email === s.rep_email);
+      const tier = tierRecord?.tier ?? 0;
+      const repPay = TOTAL_STACK[s.plan] ? calcRepPay(s.plan, tier) : (s.commission_amount || 0);
       const override = stack - repPay;
       return { ...s, stack, repPay, override };
     });
-  }, [filteredSales, repDealCounts]);
+  }, [filteredSales, repTiers]);
 
   const totals = useMemo(() => rows.reduce((acc, r) => ({
     stack: acc.stack + (r.status === 'installed' ? r.stack : 0),
