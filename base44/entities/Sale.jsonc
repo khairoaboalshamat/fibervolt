@@ -64,7 +64,12 @@
     "paid": {
       "type": "boolean",
       "default": false,
-      "description": "Whether commission has been paid"
+      "description": "Whether commission has been fully paid"
+    },
+    "partial_paid": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether 80% commission has been paid (for admin reps)"
     },
     "rep_email": {
       "type": "string",

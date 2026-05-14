@@ -1,15 +1,17 @@
 import React from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { DollarSign, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import StatCard from '@/components/dashboard/StatCard';
 import SaleRow from '@/components/dashboard/SaleRow';
 import { TOTAL_STACK, calcRepPay, calcAdminPay, calcAdminOverride } from '@/lib/commissionData';
 
 export default function Payouts() {
+  const queryClient = useQueryClient();
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
   const isAdmin = user?.role === 'admin';
 
@@ -39,6 +41,13 @@ export default function Payouts() {
     enabled: isAdmin,
   });
 
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }) => base44.entities.Sale.update(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['sales'] });
+    },
+  });
+
   const mySales = isAdmin ? sales : sales.filter(s => s.rep_email === user?.email);
 
   // For admin viewers: compute correct pay per rep (admin-rep = TOTAL_STACK, regular rep = calcRepPay with tier)
@@ -58,21 +67,30 @@ export default function Payouts() {
 
   const pipeline = mySales.filter(s => ['pending', 'scheduled'].includes(s.status));
   const awaiting = mySales.filter(s => s.status === 'installed' && !s.paid);
+  const partial = mySales.filter(s => s.status === 'installed' && s.partial_paid && !s.paid);
   const paid = mySales.filter(s => s.paid);
 
   const getAdminSaleValue = (s) => getSaleValue(s);
 
   const pipelineTotal = pipeline.reduce((sum, x) => sum + getSaleValue(x), 0);
-  // For admins: awaiting shows 80% immediate + 20% deferred (3 months)
-  const awaitingImmediate = awaiting.reduce((sum, x) => {
+  
+  // Awaiting = installed + not paid + not partial_paid (full amount due immediately)
+  const awaitingImmediate = awaiting.filter(s => !s.partial_paid).reduce((sum, x) => {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
   }, 0);
-  const awaitingDeferred = awaiting.reduce((sum, x) => {
+  const awaitingDeferred = awaiting.filter(s => !s.partial_paid).reduce((sum, x) => {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.2) : 0);
   }, 0);
-  const awaitingTotal = awaitingImmediate + awaitingDeferred;
+  
+  // Partial paid = installed + partial_paid + not paid (20% deferred remaining)
+  const partialDeferred = partial.reduce((sum, x) => {
+    const val = getSaleValue(x);
+    return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.2) : 0);
+  }, 0);
+  
+  const awaitingTotal = awaitingImmediate + awaitingDeferred + partialDeferred;
   const paidTotal = paid.reduce((sum, x) => {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
@@ -115,6 +133,7 @@ export default function Payouts() {
         <TabsList>
           <TabsTrigger value="pipeline">Pipeline ({pipeline.length})</TabsTrigger>
           <TabsTrigger value="awaiting">Awaiting ({awaiting.length})</TabsTrigger>
+          <TabsTrigger value="partial">Partial Paid ({partial.length})</TabsTrigger>
           <TabsTrigger value="paid">Paid ({paid.length})</TabsTrigger>
           <TabsTrigger value="rates">My Rates</TabsTrigger>
         </TabsList>
@@ -140,7 +159,7 @@ export default function Payouts() {
 
         <TabsContent value="awaiting">
           <Card>
-            {awaitingDeferred > 0 && awaiting.length > 0 && (
+            {awaitingDeferred > 0 && awaiting.filter(s => !s.partial_paid).length > 0 && (
               <CardHeader className="pb-2 pt-4">
                 <div className="flex gap-4 text-sm">
                   <span className="text-muted-foreground">Your 80% now: <span className="font-semibold text-foreground">${awaitingImmediate.toLocaleString()}</span></span>
@@ -165,9 +184,57 @@ export default function Payouts() {
                           override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdminFlag ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
                         />
                         {immediate !== null && (
-                          <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground">
+                          <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground items-center justify-between">
                             <span>Your pay: <span className="font-semibold text-foreground">${immediate.toLocaleString()} now</span></span>
                             <span className="text-amber-500 font-medium">+ ${deferred.toLocaleString()} in 3 months</span>
+                            {isAdmin && isRepAdminFlag && (
+                              <Button size="sm" variant="outline" onClick={() => updateMutation.mutate({ id: s.id, data: { partial_paid: true } })}>
+                                Mark 80% Paid
+                              </Button>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="partial">
+          <Card>
+            {partialDeferred > 0 && partial.length > 0 && (
+              <CardHeader className="pb-2 pt-4">
+                <div className="text-sm text-muted-foreground">
+                  Remaining 20% deferred: <span className="font-semibold text-amber-500">${partialDeferred.toLocaleString()}</span>
+                </div>
+              </CardHeader>
+            )}
+            <CardContent className="pt-4">
+              {partial.length === 0 ? (
+                <p className="text-sm text-muted-foreground py-6 text-center">No partial paid sales</p>
+              ) : (
+                <div className="divide-y divide-border">
+                  {partial.map(s => {
+                    const val = getSaleValue(s);
+                    const isRepAdminFlag = isRepAdmin(s.rep_email);
+                    const remaining = isRepAdminFlag ? Math.round(val * 0.2) : 0;
+                    return (
+                      <div key={s.id}>
+                        <SaleRow sale={s} displayValue={val} showRep={isAdmin}
+                          repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdminFlag ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                          override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdminFlag ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                        />
+                        {remaining > 0 && (
+                          <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground items-center justify-between">
+                            <span>Remaining 20%: <span className="font-semibold text-amber-500">${remaining.toLocaleString()}</span></span>
+                            {isAdmin && (
+                              <Button size="sm" variant="outline" onClick={() => updateMutation.mutate({ id: s.id, data: { paid: true } })}>
+                                Mark Fully Paid
+                              </Button>
+                            )}
                           </div>
                         )}
                       </div>
