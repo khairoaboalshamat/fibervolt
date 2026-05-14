@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { calcMonthlyBill, calcCommission, calcRepPay, TOTAL_STACK } from '@/lib/commissionData';
+import { calcMonthlyBill, calcCommission, calcAdminPay, TOTAL_STACK } from '@/lib/commissionData';
 import { DollarSign, FileText } from 'lucide-react';
 import AddressAutocomplete from '@/components/NewSale/AddressAutocomplete';
 
@@ -50,13 +50,11 @@ export default function NewSale() {
   const commission = useMemo(() => {
     if (!form.plan) return 0;
     if (user?.role === 'admin' && TOTAL_STACK[form.plan]) {
-      const tierRecord = repTiers.find(t => t.rep_email === user?.email);
-      const tier = tierRecord?.tier ?? 0;
       const addonCommission = form.add_ons.reduce((sum, aoName) => {
         const addon = addons.find(a => a.name === aoName);
         return sum + (addon?.commission || 0);
       }, 0);
-      return calcRepPay(form.plan, tier) + addonCommission;
+      return calcAdminPay(form.plan) + addonCommission;
     }
     return calcCommission(form.plan, form.add_ons, plans, addons, repTiers, user?.email);
   }, [form.plan, form.add_ons, plans, addons, repTiers, user?.email, user?.role]);
