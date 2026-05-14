@@ -182,15 +182,12 @@ export default function Payouts() {
                 <p className="text-sm text-muted-foreground py-6 text-center">No paid sales</p>
               ) : (
                 <div className="divide-y divide-border">
-                  {paid.map(s => {
-                    const rawOverride = isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null;
-                    return (
-                      <SaleRow key={s.id} sale={s} displayValue={isAdmin ? Math.round(getSaleValue(s) * 0.8) : getSaleValue(s)} showRep={isAdmin}
-                        repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
-                        override={rawOverride !== null ? Math.round(rawOverride * 0.8) : null}
-                      />
-                    );
-                  })}
+                  {paid.map(s => (
+                    <SaleRow key={s.id} sale={s} displayValue={isAdmin ? Math.round(getSaleValue(s) * 0.8) : getSaleValue(s)} showRep={isAdmin}
+                      repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdmin(s.rep_email) ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
+                      override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdmin(s.rep_email) ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
+                    />
+                  ))}
                 </div>
               )}
             </CardContent>
