@@ -10,6 +10,7 @@ import SalesTrendChart from '@/components/dashboard/SalesTrendChart';
 import PlanBreakdownChart from '@/components/dashboard/PlanBreakdownChart';
 import StatusBreakdown from '@/components/dashboard/StatusBreakdown';
 import { format, addDays, isWithinInterval, startOfDay, endOfDay } from 'date-fns';
+import { TOTAL_STACK } from '@/lib/commissionData';
 
 export default function Dashboard() {
   const { data: user } = useQuery({
@@ -32,14 +33,17 @@ export default function Dashboard() {
 
   const mySales = isAdmin ? sales : sales.filter(s => s.rep_email === user?.email);
 
+  // Admins see TOTAL_STACK per plan; reps see their saved commission_amount
+  const getSaleValue = (s) => isAdmin ? (TOTAL_STACK[s.plan] || s.commission_amount || 0) : (s.commission_amount || 0);
+
   const pipeline = mySales.filter(s => s.status !== 'cancelled')
-    .reduce((sum, s) => sum + (s.commission_amount || 0), 0);
+    .reduce((sum, s) => sum + getSaleValue(s), 0);
   const earned = mySales.filter(s => s.status === 'installed')
-    .reduce((sum, s) => sum + (s.commission_amount || 0), 0);
+    .reduce((sum, s) => sum + getSaleValue(s), 0);
   const awaiting = mySales.filter(s => s.status === 'installed' && !s.paid)
-    .reduce((sum, s) => sum + (s.commission_amount || 0), 0);
+    .reduce((sum, s) => sum + getSaleValue(s), 0);
   const paidOut = mySales.filter(s => s.paid)
-    .reduce((sum, s) => sum + (s.commission_amount || 0), 0);
+    .reduce((sum, s) => sum + getSaleValue(s), 0);
 
   const now = new Date();
   const weekEnd = addDays(now, 7);
