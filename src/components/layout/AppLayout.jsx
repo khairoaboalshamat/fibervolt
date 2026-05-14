@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 
-import { Outlet } from 'react-router-dom';
+import { Outlet, useLocation } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import { Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/button';
 export default function AppLayout({ user }) {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const location = useLocation();
+  const isMapPage = location.pathname === '/maps';
   useEffect(() => {
     document.documentElement.classList.add('dark');
     localStorage.setItem('theme', 'dark');
@@ -36,7 +38,7 @@ export default function AppLayout({ user }) {
           <div className="flex-1" />
 
         </header>
-        <main className="p-4 lg:p-6 max-w-7xl mx-auto">
+        <main className={isMapPage ? 'overflow-hidden' : 'p-4 lg:p-6 max-w-7xl mx-auto'}>
           <Outlet />
         </main>
       </div>

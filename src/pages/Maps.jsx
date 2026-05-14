@@ -1,24 +1,20 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polygon, useMapEvents, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Polygon, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Card } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Locate, MapPin, Eye, EyeOff, Layers } from 'lucide-react';
+import { Upload, Locate, Layers, SatelliteDish, Map, Filter } from 'lucide-react';
 import { PIN_STATUSES, getStatus } from '@/components/maps/PinStatusBadge';
-import PinPopup from '@/components/maps/PinPopup';
-import MapKPIs from '@/components/maps/MapKPIs';
-import { RouteOverlay, RoutePanel } from '@/components/maps/RouteOptimizer';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
 import OfflineBanner from '@/components/maps/OfflineBanner';
 import { addToOfflineQueue, flushOfflineQueue } from '@/lib/offlinePins';
 import * as XLSX from 'xlsx';
+import MapPinDrawer from '@/components/maps/MapPinDrawer';
 
-// Fix default leaflet marker icons
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
   iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
@@ -26,37 +22,48 @@ L.Icon.Default.mergeOptions({
   shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
 });
 
-function createColorIcon(color) {
+function createPinIcon(color, isNew = false) {
+  const size = isNew ? 38 : 34;
+  const pulse = isNew ? `<div style="position:absolute;inset:-6px;border-radius:50%;border:3px solid ${color};opacity:0.5;animation:ping 1.5s cubic-bezier(0,0,0.2,1) infinite;"></div>` : '';
   return L.divIcon({
     className: '',
-    html: `<div style="width:14px;height:14px;border-radius:50%;background:${color};border:2px solid white;box-shadow:0 1px 4px rgba(0,0,0,0.5)"></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
-    popupAnchor: [0, -10],
+    html: `
+      <style>@keyframes ping{75%,100%{transform:scale(1.5);opacity:0}}</style>
+      <div style="position:relative;width:${size}px;height:${size + 10}px">
+        ${pulse}
+        <svg viewBox="0 0 24 32" width="${size}" height="${size + 10}" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 0C5.37 0 0 5.37 0 12c0 8 12 20 12 20S24 20 24 12C24 5.37 18.63 0 12 0z" fill="${color}" stroke="white" stroke-width="1.5"/>
+          <circle cx="12" cy="12" r="5" fill="white" opacity="0.9"/>
+        </svg>
+      </div>`,
+    iconSize: [size, size + 10],
+    iconAnchor: [size / 2, size + 10],
+    popupAnchor: [0, -(size + 10)],
   });
 }
 
 function userLocationIcon() {
   return L.divIcon({
     className: '',
-    html: `<div style="width:18px;height:18px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 0 4px rgba(59,130,246,0.35)"></div>`,
-    iconSize: [18, 18],
-    iconAnchor: [9, 9],
+    html: `<div style="width:20px;height:20px;border-radius:50%;background:#3b82f6;border:3px solid white;box-shadow:0 0 0 5px rgba(59,130,246,0.3)"></div>`,
+    iconSize: [20, 20],
+    iconAnchor: [10, 10],
   });
 }
 
-function ClickHandler({ onMapClick }) {
-  useMapEvents({ click: (e) => onMapClick(e.latlng) });
+function ClickHandler({ onMapClick, drawerOpen }) {
+  useMapEvents({
+    click: (e) => {
+      if (!drawerOpen) onMapClick(e.latlng);
+    }
+  });
   return null;
 }
 
-// Internal component that can call useMap()
 function FlyToLocation({ location }) {
   const map = useMap();
   useEffect(() => {
-    if (location) {
-      map.flyTo([location.lat, location.lng], Math.max(map.getZoom(), 16), { animate: true, duration: 1.2 });
-    }
+    if (location) map.flyTo([location.lat, location.lng], Math.max(map.getZoom(), 17), { animate: true, duration: 1 });
   }, [location, map]);
   return null;
 }
@@ -64,44 +71,41 @@ function FlyToLocation({ location }) {
 export default function Maps() {
   const queryClient = useQueryClient();
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: () => base44.auth.me() });
-  const { data: pins = [], isLoading: pinsLoading } = useQuery({
+  const { data: pins = [] } = useQuery({
     queryKey: ['pins'],
     queryFn: () => base44.entities.MapPin.list('-created_date', 1000),
-  });
-  const { data: sales = [] } = useQuery({
-    queryKey: ['sales'],
-    queryFn: () => base44.entities.Sale.list('-created_date', 500),
   });
   const { data: territories = [] } = useQuery({
     queryKey: ['territories'],
     queryFn: () => base44.entities.Territory.list('-created_date', 200),
   });
-  const [showTerritories, setShowTerritories] = useState(true);
-  const [routeActive, setRouteActive] = useState(false);
 
   const isAdmin = user?.role === 'admin';
-
   const [userLocation, setUserLocation] = useState(null);
   const [flyTo, setFlyTo] = useState(null);
-  const [newPin, setNewPin] = useState(null);
+  const [selectedPin, setSelectedPin] = useState(null); // existing pin
+  const [newPin, setNewPin] = useState(null);            // unsaved pin
   const [filterStatus, setFilterStatus] = useState('all');
   const [filterRep, setFilterRep] = useState('all');
-  const [showLegend, setShowLegend] = useState(true);
+  const [showTerritories, setShowTerritories] = useState(true);
+  const [satellite, setSatellite] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [showFilters, setShowFilters] = useState(false);
   const fileInputRef = useRef();
 
-  // Live location tracking
+  const drawerPin = selectedPin || newPin;
+  const drawerOpen = !!drawerPin;
+
   useEffect(() => {
     if (!navigator.geolocation) return;
-    const watcher = navigator.geolocation.watchPosition(
+    const id = navigator.geolocation.watchPosition(
       pos => setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
       () => {},
       { enableHighAccuracy: true, maximumAge: 5000 }
     );
-    return () => navigator.geolocation.clearWatch(watcher);
+    return () => navigator.geolocation.clearWatch(id);
   }, []);
 
-  // Real-time pin subscriptions
   useEffect(() => {
     const unsub = base44.entities.MapPin.subscribe((event) => {
       queryClient.setQueryData(['pins'], (old = []) => {
@@ -114,76 +118,57 @@ export default function Maps() {
     return unsub;
   }, [queryClient]);
 
-  const createPin = useMutation({
-    mutationFn: (data) => base44.entities.MapPin.create(data),
-    onSuccess: () => setNewPin(null),
-  });
-
-  const updatePin = useMutation({
-    mutationFn: ({ id, data }) => base44.entities.MapPin.update(id, data),
-  });
-
-  const deletePin = useMutation({
-    mutationFn: (id) => base44.entities.MapPin.delete(id),
-  });
-
-  const handleMapClick = useCallback((latlng) => {
-    setNewPin({ lat: latlng.lat, lng: latlng.lng, status: 'lead', notes: '', address: '' });
-  }, []);
+  const createPin = useMutation({ mutationFn: (d) => base44.entities.MapPin.create(d) });
+  const updatePin = useMutation({ mutationFn: ({ id, data }) => base44.entities.MapPin.update(id, data) });
+  const deletePin = useMutation({ mutationFn: (id) => base44.entities.MapPin.delete(id) });
 
   const logActivity = (action, detail, meta = {}) => {
     base44.entities.ActivityLog.create({
       rep_email: user?.email,
       rep_name: user?.full_name || user?.email,
-      action,
-      detail,
-      meta,
+      action, detail, meta,
     }).catch(() => {});
   };
 
-  const handleSaveNewPin = (pinData) => {
-    const fullPin = {
-      ...pinData,
-      rep_email: user?.email,
-      rep_name: user?.full_name || user?.email,
-      source: 'manual',
-    };
+  const handleMapClick = useCallback((latlng) => {
+    setSelectedPin(null);
+    setNewPin({ lat: latlng.lat, lng: latlng.lng, status: 'knocked', notes: '', address: '' });
+  }, []);
 
-    if (!navigator.onLine) {
-      addToOfflineQueue(fullPin);
-      setNewPin(null);
-      return;
-    }
-
-    createPin.mutate(fullPin, {
-      onSuccess: () => {
-        logActivity('pin_created', `Dropped a pin at ${pinData.address || `${pinData.lat.toFixed(4)}, ${pinData.lng.toFixed(4)}`}`, { status: pinData.status });
+  const handleSave = (pinData) => {
+    if (pinData.id) {
+      // update existing
+      updatePin.mutate({ id: pinData.id, data: pinData }, {
+        onSuccess: () => {
+          logActivity('pin_updated', `Updated ${pinData.address || 'pin'} → ${pinData.status}`, { status: pinData.status });
+          setSelectedPin(null);
+        }
+      });
+    } else {
+      const fullPin = { ...pinData, rep_email: user?.email, rep_name: user?.full_name || user?.email, source: 'manual' };
+      if (!navigator.onLine) {
+        addToOfflineQueue(fullPin);
+        setNewPin(null);
+        return;
       }
-    });
+      createPin.mutate(fullPin, {
+        onSuccess: () => {
+          logActivity('pin_created', `Dropped pin at ${pinData.address || `${pinData.lat?.toFixed(4)}, ${pinData.lng?.toFixed(4)}`}`, { status: pinData.status });
+          setNewPin(null);
+        }
+      });
+    }
+  };
+
+  const handleDelete = (id) => {
+    deletePin.mutate(id);
+    setSelectedPin(null);
+    setNewPin(null);
   };
 
   const handleOfflineSync = async () => {
     await flushOfflineQueue((pin) => base44.entities.MapPin.create(pin));
     queryClient.invalidateQueries({ queryKey: ['pins'] });
-  };
-
-  const handleUpdatePin = (pinData) => {
-    updatePin.mutate({
-      id: pinData.id,
-      data: {
-        status: pinData.status,
-        notes: pinData.notes,
-        customer_name: pinData.customer_name,
-        phone: pinData.phone,
-        email: pinData.email,
-        fiber_status: pinData.fiber_status,
-        follow_up_date: pinData.follow_up_date,
-      }
-    }, {
-      onSuccess: () => {
-        logActivity('pin_updated', `Updated pin at ${pinData.address || 'location'} → ${pinData.status}`, { status: pinData.status });
-      }
-    });
   };
 
   const handleExcelUpload = async (e) => {
@@ -195,20 +180,17 @@ export default function Maps() {
       const workbook = XLSX.read(data);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet);
-
       const toCreate = [];
       for (const row of rows) {
-        const address = row['address'] || row['Address'] || row['ADDRESS'] || '';
-        const rawStatus = (row['status'] || row['Status'] || row['STATUS'] || 'lead').toLowerCase().replace(/\s+/g, '_');
+        const address = row['address'] || row['Address'] || '';
+        const rawStatus = (row['status'] || row['Status'] || 'knocked').toLowerCase().replace(/\s+/g, '_');
         const lat = parseFloat(row['lat'] || row['latitude'] || row['Lat'] || '');
         const lng = parseFloat(row['lng'] || row['longitude'] || row['Lng'] || '');
-        const validStatus = PIN_STATUSES.find(s => s.value === rawStatus)?.value || 'lead';
-
+        const validStatus = PIN_STATUSES.find(s => s.value === rawStatus)?.value || 'knocked';
         if (!isNaN(lat) && !isNaN(lng)) {
           toCreate.push({ address, lat, lng, status: validStatus, rep_email: user?.email, rep_name: user?.full_name || user?.email, source: 'upload' });
         }
       }
-
       if (toCreate.length > 0) {
         await base44.entities.MapPin.bulkCreate(toCreate);
         queryClient.invalidateQueries({ queryKey: ['pins'] });
@@ -229,173 +211,170 @@ export default function Maps() {
   }), [pins, filterStatus, filterRep, isAdmin, user]);
 
   const defaultCenter = userLocation ? [userLocation.lat, userLocation.lng] : [39.8283, -98.5795];
-  const defaultZoom = userLocation ? 15 : 5;
+  const defaultZoom = userLocation ? 16 : 5;
+
+  const tileUrl = satellite
+    ? 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}'
+    : 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png';
+
+  const statusCounts = useMemo(() => {
+    const counts = {};
+    visiblePins.forEach(p => { counts[p.status] = (counts[p.status] || 0) + 1; });
+    return counts;
+  }, [visiblePins]);
 
   return (
-    <div className="space-y-4">
-      {/* Header */}
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-2">
-            <MapPin className="h-6 w-6 text-primary" /> D2D Map
-          </h1>
-          <p className="text-muted-foreground text-sm">Click the map to drop a pin. Live tracking enabled.</p>
+    <div className="relative" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+      {/* Silent background components */}
+      <RepTracker user={user} />
+
+      {/* Full-screen map */}
+      <MapContainer
+        center={defaultCenter}
+        zoom={defaultZoom}
+        style={{ height: '100%', width: '100%', zIndex: 0 }}
+        zoomControl={false}
+      >
+        <TileLayer url={tileUrl} attribution="" />
+        <ClickHandler onMapClick={handleMapClick} drawerOpen={drawerOpen} />
+        {flyTo && <FlyToLocation location={flyTo} />}
+
+        {/* Territory overlays */}
+        {showTerritories && territories.filter(t => t.status === 'active' && t.coordinates?.length > 2).map(t => (
+          <Polygon
+            key={t.id}
+            positions={t.coordinates.map(c => [c.lat, c.lng])}
+            pathOptions={{ color: t.color || '#3b82f6', fillColor: t.color || '#3b82f6', fillOpacity: 0.12, weight: 2.5 }}
+          />
+        ))}
+
+        {/* Live rep dots (admin) */}
+        {isAdmin && <LiveRepDots currentUserEmail={user?.email} />}
+
+        {/* User location */}
+        {userLocation && (
+          <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon()} />
+        )}
+
+        {/* Existing pins */}
+        {visiblePins.map(pin => {
+          const s = getStatus(pin.status);
+          return (
+            <Marker
+              key={pin.id}
+              position={[pin.lat, pin.lng]}
+              icon={createPinIcon(s.color)}
+              eventHandlers={{ click: () => { setNewPin(null); setSelectedPin(pin); } }}
+            />
+          );
+        })}
+
+        {/* New unsaved pin */}
+        {newPin && (
+          <Marker position={[newPin.lat, newPin.lng]} icon={createPinIcon('#94a3b8', true)} />
+        )}
+      </MapContainer>
+
+      {/* Top bar overlay */}
+      <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center gap-2">
+        {/* Status summary pills */}
+        <div className="flex-1 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
+          <span className="text-white/70 text-xs font-medium shrink-0">
+            {visiblePins.length} pins
+          </span>
+          {PIN_STATUSES.filter(s => statusCounts[s.value]).map(s => (
+            <button
+              key={s.value}
+              onClick={() => setFilterStatus(filterStatus === s.value ? 'all' : s.value)}
+              className={`shrink-0 flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-semibold transition-all ${filterStatus === s.value ? 'ring-2 ring-white' : 'opacity-80'}`}
+              style={{ background: s.color + 'cc', color: 'white' }}
+            >
+              <span>{statusCounts[s.value]}</span>
+              <span className="hidden sm:inline">{s.label}</span>
+            </button>
+          ))}
         </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => userLocation && setFlyTo({ ...userLocation, _t: Date.now() })}
-            disabled={!userLocation}
+
+        {/* Filter button */}
+        {isAdmin && (
+          <button
+            onClick={() => setShowFilters(v => !v)}
+            className="bg-black/60 backdrop-blur-sm text-white rounded-xl p-2.5 hover:bg-black/70 transition-colors"
           >
-            <Locate className="h-4 w-4 mr-1" />
-            {userLocation ? 'My Location' : 'Locating...'}
-          </Button>
-          <Button variant="outline" size="sm" onClick={() => fileInputRef.current?.click()} disabled={uploading}>
-            <Upload className="h-4 w-4 mr-1" /> {uploading ? 'Uploading...' : 'Upload Excel'}
-          </Button>
-          <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleExcelUpload} />
-          <Button variant={showTerritories ? 'secondary' : 'ghost'} size="sm" onClick={() => setShowTerritories(v => !v)} title="Toggle territories">
-            <Layers className="h-4 w-4 mr-1" /> Territories
-          </Button>
-          <Button variant="ghost" size="sm" onClick={() => setShowLegend(v => !v)}>
-            {showLegend ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-          </Button>
-        </div>
+            <Filter className="h-4 w-4" />
+          </button>
+        )}
       </div>
 
-      {/* Offline banner */}
-      <OfflineBanner onSync={handleOfflineSync} />
-
-      {/* KPIs */}
-      <MapKPIs pins={pins} sales={sales} userEmail={user?.email} />
-
-      {/* Filters */}
-      <div className="flex gap-3 flex-wrap">
-        <Select value={filterStatus} onValueChange={setFilterStatus}>
-          <SelectTrigger className="w-44 h-8 text-sm"><SelectValue placeholder="All Statuses" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Statuses</SelectItem>
-            {PIN_STATUSES.map(s => <SelectItem key={s.value} value={s.value}>{s.label}</SelectItem>)}
-          </SelectContent>
-        </Select>
-        {isAdmin && (
-          <Select value={filterRep} onValueChange={setFilterRep}>
-            <SelectTrigger className="w-44 h-8 text-sm"><SelectValue placeholder="All Reps" /></SelectTrigger>
+      {/* Admin rep filter dropdown */}
+      {showFilters && isAdmin && (
+        <div className="absolute top-16 right-3 z-[1000] bg-card border border-border rounded-xl shadow-2xl p-3 w-56">
+          <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Filter by Rep</p>
+          <Select value={filterRep} onValueChange={v => { setFilterRep(v); setShowFilters(false); }}>
+            <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Reps</SelectItem>
               {repEmails.map(e => <SelectItem key={e} value={e}>{e}</SelectItem>)}
             </SelectContent>
           </Select>
-        )}
-        <span className="text-xs text-muted-foreground self-center">
-          {visiblePins.length} pin{visiblePins.length !== 1 ? 's' : ''}
-        </span>
+        </div>
+      )}
+
+      {/* Right side floating buttons */}
+      <div className="absolute right-3 bottom-8 z-[1000] flex flex-col gap-2">
+        {/* Locate me */}
+        <button
+          onClick={() => userLocation && setFlyTo({ ...userLocation, _t: Date.now() })}
+          disabled={!userLocation}
+          className="w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center disabled:opacity-40 hover:bg-gray-50 transition-colors"
+          title="My Location"
+        >
+          <Locate className="h-5 w-5 text-gray-700" />
+        </button>
+
+        {/* Satellite toggle */}
+        <button
+          onClick={() => setSatellite(v => !v)}
+          className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center transition-colors ${satellite ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+          title="Toggle satellite"
+        >
+          {satellite ? <Map className="h-5 w-5" /> : <SatelliteDish className="h-5 w-5" />}
+        </button>
+
+        {/* Territories toggle */}
+        <button
+          onClick={() => setShowTerritories(v => !v)}
+          className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center transition-colors ${showTerritories ? 'bg-primary text-white' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+          title="Toggle territories"
+        >
+          <Layers className="h-5 w-5" />
+        </button>
+
+        {/* Upload */}
+        <button
+          onClick={() => fileInputRef.current?.click()}
+          disabled={uploading}
+          className="w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors disabled:opacity-50"
+          title="Upload Excel"
+        >
+          <Upload className="h-5 w-5 text-gray-700" />
+        </button>
+        <input ref={fileInputRef} type="file" accept=".xlsx,.xls,.csv" className="hidden" onChange={handleExcelUpload} />
       </div>
 
-      {/* Rep GPS tracker (silent background component) */}
-      <RepTracker user={user} />
+      {/* Offline banner */}
+      <div className="absolute top-16 left-3 right-3 z-[1000]">
+        <OfflineBanner onSync={handleOfflineSync} />
+      </div>
 
-      {/* Map */}
-      <Card className="overflow-hidden p-0">
-        <div style={{ height: 'calc(100vh - 340px)', minHeight: '420px', width: '100%', position: 'relative' }}>
-          <MapContainer
-            center={defaultCenter}
-            zoom={defaultZoom}
-            style={{ height: '100%', width: '100%', zIndex: 0 }}
-          >
-            <TileLayer
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              attribution='&copy; OpenStreetMap contributors'
-            />
-            <ClickHandler onMapClick={handleMapClick} />
-            {flyTo && <FlyToLocation location={flyTo} />}
-
-            {/* Route overlay */}
-            <RouteOverlay pins={visiblePins} userLocation={userLocation} active={routeActive} />
-
-            {/* Live rep dots (admin only) */}
-            {isAdmin && <LiveRepDots currentUserEmail={user?.email} />}
-
-            {/* Territory overlays */}
-            {showTerritories && territories.filter(t => t.status === 'active' && t.coordinates?.length > 2).map(t => (
-              <Polygon
-                key={t.id}
-                positions={t.coordinates.map(c => [c.lat, c.lng])}
-                pathOptions={{ color: t.color || '#3b82f6', fillColor: t.color || '#3b82f6', fillOpacity: 0.1, weight: 2 }}
-              >
-                <Popup>
-                  <div className="text-sm space-y-0.5">
-                    <p className="font-semibold">{t.name}</p>
-                    {t.assigned_rep_name && <p className="text-xs text-muted-foreground">Rep: {t.assigned_rep_name}</p>}
-                  </div>
-                </Popup>
-              </Polygon>
-            ))}
-
-            {/* Live user location */}
-            {userLocation && (
-              <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon()}>
-                <Popup><p className="text-xs font-semibold text-blue-500">📍 You are here</p></Popup>
-              </Marker>
-            )}
-
-            {/* Saved pins */}
-            {visiblePins.map(pin => {
-              const s = getStatus(pin.status);
-              return (
-                <Marker key={pin.id} position={[pin.lat, pin.lng]} icon={createColorIcon(s.color)}>
-                  <Popup>
-                    <PinPopup
-                      pin={pin}
-                      onSave={handleUpdatePin}
-                      onDelete={(id) => deletePin.mutate(id)}
-                      onClose={() => {}}
-                    />
-                  </Popup>
-                </Marker>
-              );
-            })}
-
-            {/* New unsaved pin */}
-            {newPin && (
-              <Marker position={[newPin.lat, newPin.lng]} icon={createColorIcon('#94a3b8')}>
-                <Popup>
-                  <PinPopup
-                    pin={newPin}
-                    onSave={handleSaveNewPin}
-                    onDelete={() => setNewPin(null)}
-                    onClose={() => setNewPin(null)}
-                  />
-                </Popup>
-              </Marker>
-            )}
-          </MapContainer>
-
-          {/* Route Optimizer panel */}
-          <RoutePanel pins={visiblePins} userLocation={userLocation} active={routeActive} setActive={setRouteActive} />
-
-          {/* Legend */}
-          {showLegend && (
-            <div className="absolute bottom-4 right-4 z-[1000] bg-card border border-border rounded-lg p-3 shadow-lg space-y-1.5">
-              <div className="flex items-center gap-2 text-xs mb-1">
-                <div style={{ width: 12, height: 12, borderRadius: '50%', background: '#3b82f6', border: '3px solid white', boxShadow: '0 0 0 3px rgba(59,130,246,0.35)', flexShrink: 0 }} />
-                <span className="text-blue-400 font-medium">You</span>
-              </div>
-              {PIN_STATUSES.map(s => (
-                <div key={s.value} className="flex items-center gap-2 text-xs">
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: s.color, flexShrink: 0 }} />
-                  <span className="text-foreground">{s.label}</span>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </Card>
-
-      <p className="text-xs text-muted-foreground text-center">
-        Excel upload requires columns: <strong>lat</strong>, <strong>lng</strong>, <strong>address</strong> (optional), <strong>status</strong> (optional)
-      </p>
+      {/* Bottom slide-up drawer for pin details */}
+      <MapPinDrawer
+        pin={drawerPin}
+        isNew={!!newPin && !selectedPin}
+        onSave={handleSave}
+        onDelete={handleDelete}
+        onClose={() => { setSelectedPin(null); setNewPin(null); }}
+      />
     </div>
   );
 }
