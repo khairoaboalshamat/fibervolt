@@ -41,16 +41,12 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
         ${collapsed ? 'w-[72px]' : 'w-64'}
         ${mobileOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0
       `}>
-        <div className={`flex items-center h-16 px-4 border-b border-sidebar-border ${collapsed ? 'justify-center' : 'justify-between'}`}>
-          {!collapsed &&
-          <img src="https://media.base44.com/images/public/69fa7758d58bb3dfbaee436f/4f4e0194a_FiberVoltLogo.gif" alt="FiberVolt Logo" className="h-10 w-auto object-contain" />
-          }
+        <div className={`flex items-center h-16 px-4 border-b border-sidebar-border ${collapsed ? 'justify-center' : 'justify-end'}`}>
           <Button
             variant="ghost"
             size="icon"
             className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent hidden lg:flex h-8 w-8"
             onClick={() => setCollapsed(!collapsed)}>
-            
             {collapsed ? <Menu className="h-4 w-4" /> : <X className="h-4 w-4" />}
           </Button>
           <Button
@@ -58,7 +54,6 @@ export default function Sidebar({ user, collapsed, setCollapsed, mobileOpen, set
             size="icon"
             className="text-sidebar-foreground hover:text-white hover:bg-sidebar-accent lg:hidden h-8 w-8"
             onClick={() => setMobileOpen(false)}>
-            
             <X className="h-4 w-4" />
           </Button>
         </div>
