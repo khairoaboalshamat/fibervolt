@@ -8,9 +8,9 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Textarea } from '@/components/ui/textarea';
 import { calcMonthlyBill, calcCommission } from '@/lib/commissionData';
 import { DollarSign, FileText } from 'lucide-react';
+import AddressAutocomplete from '@/components/NewSale/AddressAutocomplete';
 
 export default function NewSale() {
   const navigate = useNavigate();
@@ -21,9 +21,9 @@ export default function NewSale() {
     queryKey: ['rates'],
     queryFn: () => base44.entities.CommissionRate.list()
   });
-  const { data: boosts = [] } = useQuery({
-    queryKey: ['boosts'],
-    queryFn: () => base44.entities.RepBoost.list()
+  const { data: repTiers = [] } = useQuery({
+    queryKey: ['repTiers'],
+    queryFn: () => base44.entities.RepTier.list()
   });
 
   const plans = rates.filter((r) => r.type === 'plan');
@@ -43,19 +43,35 @@ export default function NewSale() {
   });
 
   const monthlyBill = useMemo(() =>
-  form.plan ? calcMonthlyBill(form.plan, form.add_ons, plans, addons) : 0,
-  [form.plan, form.add_ons, plans, addons]
+    form.plan ? calcMonthlyBill(form.plan, form.add_ons, plans, addons) : 0,
+    [form.plan, form.add_ons, plans, addons]
   );
 
   const commission = useMemo(() =>
-  form.plan ? calcCommission(form.plan, form.add_ons, plans, addons, boosts, user?.email) : 0,
-  [form.plan, form.add_ons, plans, addons, boosts, user?.email]
+    form.plan ? calcCommission(form.plan, form.add_ons, plans, addons, repTiers, user?.email) : 0,
+    [form.plan, form.add_ons, plans, addons, repTiers, user?.email]
   );
 
   const createMutation = useMutation({
-    mutationFn: (data) => base44.entities.Sale.create(data),
+    mutationFn: async (data) => {
+      const sale = await base44.entities.Sale.create(data);
+      // Auto-create client record
+      await base44.entities.Client.create({
+        name: data.customer_name,
+        phone: data.phone,
+        address: data.address,
+        plan: data.plan,
+        add_ons: data.add_ons,
+        install_date: data.install_date,
+        status: 'active',
+        rep_email: data.rep_email,
+        rep_name: data.rep_name,
+      });
+      return sale;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['sales'] });
+      queryClient.invalidateQueries({ queryKey: ['clients'] });
       navigate('/');
     }
   });
@@ -64,8 +80,8 @@ export default function NewSale() {
     setForm((prev) => ({
       ...prev,
       add_ons: prev.add_ons.includes(addonName) ?
-      prev.add_ons.filter((a) => a !== addonName) :
-      [...prev.add_ons, addonName]
+        prev.add_ons.filter((a) => a !== addonName) :
+        [...prev.add_ons, addonName]
     }));
   };
 
@@ -114,10 +130,10 @@ export default function NewSale() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-2">
                 <Label>Address</Label>
-                <Input
+                <AddressAutocomplete
                   value={form.address}
-                  onChange={(e) => setForm((p) => ({ ...p, address: e.target.value }))}
-                  placeholder="123 Main St, City, State 12345" />
+                  onChange={(v) => setForm((p) => ({ ...p, address: v }))}
+                />
               </div>
               <div className="space-y-2">
                 <Label>Date of Birth</Label>
@@ -171,7 +187,7 @@ export default function NewSale() {
                 </SelectTrigger>
                 <SelectContent>
                   {plans.map((p) =>
-                  <SelectItem key={p.name} value={p.name}>
+                    <SelectItem key={p.name} value={p.name}>
                       {p.name} — ${p.monthly_price}/mo
                     </SelectItem>
                   )}
@@ -182,12 +198,11 @@ export default function NewSale() {
             <div className="space-y-3">
               <Label>Add-Ons</Label>
               {addons.map((a) =>
-              <div key={a.name} className="flex items-center gap-3">
+                <div key={a.name} className="flex items-center gap-3">
                   <Checkbox
-                  checked={form.add_ons.includes(a.name)}
-                  onCheckedChange={() => handleToggleAddon(a.name)}
-                  id={`addon-${a.name}`} />
-                
+                    checked={form.add_ons.includes(a.name)}
+                    onCheckedChange={() => handleToggleAddon(a.name)}
+                    id={`addon-${a.name}`} />
                   <label htmlFor={`addon-${a.name}`} className="text-sm cursor-pointer flex-1">
                     {a.name}
                     <span className="text-muted-foreground ml-1">(+${a.monthly_price}/mo)</span>
@@ -195,16 +210,6 @@ export default function NewSale() {
                 </div>
               )}
             </div>
-
-            
-
-
-
-
-
-
-
-            
           </CardContent>
         </Card>
 
@@ -227,11 +232,10 @@ export default function NewSale() {
           type="submit"
           className="w-full h-12 text-base font-semibold"
           disabled={!form.customer_name || !form.btn || !form.plan || !form.install_date || createMutation.isPending}>
-          
           <DollarSign className="h-5 w-5 mr-2" />
           {createMutation.isPending ? 'Submitting...' : 'Submit Sale'}
         </Button>
       </form>
-    </div>);
-
+    </div>
+  );
 }

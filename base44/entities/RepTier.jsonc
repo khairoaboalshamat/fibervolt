@@ -1,0 +1,59 @@
+{
+  "name": "RepTier",
+  "type": "object",
+  "properties": {
+    "rep_email": {
+      "type": "string",
+      "description": "Rep email"
+    },
+    "rep_name": {
+      "type": "string",
+      "description": "Rep display name"
+    },
+    "tier": {
+      "type": "number",
+      "description": "Tier level: 0 = base, 1 = +$25, 2 = +$50, 3 = +$75, 4 = +$100",
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4
+      ],
+      "default": 0
+    }
+  },
+  "required": [
+    "rep_email",
+    "tier"
+  ],
+  "rls": {
+    "create": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "read": {
+      "$or": [
+        {
+          "user_condition": {
+            "role": "admin"
+          }
+        },
+        {
+          "data.rep_email": "{{user.email}}"
+        }
+      ]
+    },
+    "update": {
+      "user_condition": {
+        "role": "admin"
+      }
+    },
+    "delete": {
+      "user_condition": {
+        "role": "admin"
+      }
+    }
+  }
+}

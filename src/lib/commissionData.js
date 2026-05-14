@@ -72,13 +72,25 @@ export function calcMonthlyBill(plan, addOns, plans, addons) {
   return total;
 }
 
-export function calcCommission(plan, addOns, plans, addons, boosts = [], repEmail = '') {
+// Tier boost: tier 0=+$0, 1=+$25, 2=+$50, 3=+$75, 4=+$100 on top of base commission
+export const TIER_BOOST = { 0: 0, 1: 25, 2: 50, 3: 75, 4: 100 };
+
+export const TIER_LABELS = {
+  0: 'Base',
+  1: 'Tier 1 (+$25)',
+  2: 'Tier 2 (+$50)',
+  3: 'Tier 3 (+$75)',
+  4: 'Tier 4 (+$100)',
+};
+
+export function calcCommission(plan, addOns, plans, addons, repTiers = [], repEmail = '') {
   const planData = plans.find(p => p.name === plan);
   let total = planData?.commission || 0;
-  
-  // Add boost for this rep/plan
-  const boost = boosts.find(b => b.rep_email === repEmail && b.plan === plan);
-  if (boost) total += boost.boost_amount;
+
+  // Apply tier boost (single tier per rep, applies to all plans)
+  const tierRecord = repTiers.find(t => t.rep_email === repEmail);
+  const tier = tierRecord?.tier ?? 0;
+  total += TIER_BOOST[tier] ?? 0;
 
   addOns.forEach(ao => {
     const addon = addons.find(a => a.name === ao);
