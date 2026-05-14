@@ -138,11 +138,17 @@ export default function Maps() {
     setAddingPin(false);
     // Optimistically open drawer with coords while we reverse-geocode
     setNewPin({ lat: latlng.lat, lng: latlng.lng, status: 'knocked', notes: '', address: '' });
-    // Reverse geocode using Nominatim
-    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json`)
+    // Reverse geocode using Nominatim with zoom level for street detail
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json&zoom=18`)
       .then(r => r.json())
       .then(data => {
-        const address = data.display_name?.split(',').slice(0, 3).join(',').trim() || '';
+        // Build address from street + city + state for better specificity
+        const parts = [];
+        if (data.address?.road) parts.push(data.address.road);
+        if (data.address?.house_number) parts[0] = `${data.address.house_number} ${parts[0] || ''}`.trim();
+        if (data.address?.city) parts.push(data.address.city);
+        if (data.address?.state) parts.push(data.address.state);
+        const address = parts.join(', ').trim() || data.display_name?.split(',').slice(0, 4).join(',').trim() || '';
         setNewPin(prev => prev ? { ...prev, address } : prev);
       })
       .catch(() => {});
