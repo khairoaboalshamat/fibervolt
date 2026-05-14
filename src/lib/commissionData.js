@@ -45,6 +45,16 @@ export function calcAdminPay(plan) {
   return TOTAL_STACK[plan] || 0;
 }
 
+// Admin total value = full stack + add-on commissions
+export function calcAdminTotal(plan, addOns = [], addons = []) {
+  const stack = TOTAL_STACK[plan] || 0;
+  const addonSum = addOns.reduce((sum, aoName) => {
+    const found = addons.find(a => a.name === aoName);
+    return sum + (found?.commission || 0);
+  }, 0);
+  return stack + addonSum;
+}
+
 // Admin override = total stack - rep pay
 export function calcAdminOverride(plan, tier = 0) {
   const stack = TOTAL_STACK[plan];

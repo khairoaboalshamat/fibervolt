@@ -8,7 +8,7 @@ import { DollarSign, Clock, CheckCircle2, TrendingUp } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import StatCard from '@/components/dashboard/StatCard';
 import SaleRow from '@/components/dashboard/SaleRow';
-import { TOTAL_STACK, calcRepPay, calcAdminPay, calcAdminOverride } from '@/lib/commissionData';
+import { TOTAL_STACK, calcRepPay, calcAdminPay, calcAdminOverride, calcAdminTotal } from '@/lib/commissionData';
 
 export default function Payouts() {
   const queryClient = useQueryClient();
@@ -50,14 +50,21 @@ export default function Payouts() {
 
   const mySales = isAdmin ? sales : sales.filter(s => s.rep_email === user?.email);
 
-  // For admin viewers: compute correct pay per rep (admin-rep = TOTAL_STACK, regular rep = calcRepPay with tier)
+  const plans = rates.filter(r => r.type === 'plan');
+  const addons = rates.filter(r => r.type === 'addon');
+  const myBoosts = boosts.filter(b => b.rep_email === user?.email);
+
+  // Full pipeline value for admin reps = total stack + add-ons
+  const getAdminFullValue = (s) => calcAdminTotal(s.plan, s.add_ons || [], addons);
+
+  // For admin viewers: compute correct pay per rep
   // For rep viewers: use their saved commission_amount
   const getSaleValue = (s) => {
     if (!isAdmin) return s.commission_amount || 0;
     if (!TOTAL_STACK[s.plan]) return s.commission_amount || 0;
     const repUser = users.find(u => u.email === s.rep_email);
     const repIsAdmin = repUser?.role === 'admin';
-    if (repIsAdmin) return calcAdminPay(s.plan);
+    if (repIsAdmin) return getAdminFullValue(s);
     const tier = repTiers.find(t => t.rep_email === s.rep_email)?.tier ?? 0;
     return calcRepPay(s.plan, tier);
   };
@@ -73,7 +80,7 @@ export default function Payouts() {
 
   const pipelineTotal = pipeline.reduce((sum, x) => sum + getSaleValue(x), 0);
   
-  // Awaiting includes all unpaid sales - split into immediate (80%) and deferred (20%)
+  // For admin reps: pipeline = full value, earned = 80%, deferred = 20%
   const awaitingImmediate = awaiting.filter(s => !s.partial_paid).reduce((sum, x) => {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
@@ -88,10 +95,6 @@ export default function Payouts() {
     const val = getSaleValue(x);
     return sum + (isRepAdmin(x.rep_email) ? Math.round(val * 0.8) : val);
   }, 0);
-
-  const plans = rates.filter(r => r.type === 'plan');
-  const addons = rates.filter(r => r.type === 'addon');
-  const myBoosts = boosts.filter(b => b.rep_email === user?.email);
 
   return (
     <div className="space-y-6">
@@ -165,16 +168,18 @@ export default function Payouts() {
                     const isRepAdminFlag = isRepAdmin(s.rep_email);
                     const immediate = isRepAdminFlag ? Math.round(val * 0.8) : null;
                     const deferred = isRepAdminFlag ? Math.round(val * 0.2) : null;
+                    // Show 80% in the row for admin reps (earned amount)
+                    const displayVal = isRepAdminFlag ? Math.round(val * 0.8) : val;
                     return (
                       <div key={s.id}>
-                        <SaleRow sale={s} displayValue={val} showRep={isAdmin}
+                        <SaleRow sale={s} displayValue={displayVal} showRep={isAdmin}
                           repPay={isAdmin && TOTAL_STACK[s.plan] ? (isRepAdminFlag ? calcAdminPay(s.plan) : calcRepPay(s.plan, getRepTier(s.rep_email))) : null}
                           override={isAdmin && TOTAL_STACK[s.plan] && !isRepAdminFlag ? calcAdminOverride(s.plan, getRepTier(s.rep_email)) : null}
                         />
                         {immediate !== null && (
                           <div className="flex gap-4 px-4 pb-2 text-xs text-muted-foreground items-center justify-between">
-                            <span>Your pay: <span className="font-semibold text-foreground">${immediate.toLocaleString()}</span></span>
-                            <span className="text-amber-500 font-medium">+ ${deferred.toLocaleString()} deferred</span>
+                            <span>80% earned: <span className="font-semibold text-foreground">${immediate.toLocaleString()}</span></span>
+                            <span className="text-amber-500 font-medium">20% deferred: ${deferred.toLocaleString()}</span>
                             {isAdmin && isRepAdminFlag && (
                               <Button size="sm" variant="outline" onClick={() => updateMutation.mutate({ id: s.id, data: { partial_paid: true } })}>
                                 Mark 80% Paid
