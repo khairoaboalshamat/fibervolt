@@ -66,6 +66,7 @@ export default function NewSale() {
         status: 'active',
         rep_email: data.rep_email,
         rep_name: data.rep_name,
+        notes: data.notes || '',
       });
       return sale;
     },

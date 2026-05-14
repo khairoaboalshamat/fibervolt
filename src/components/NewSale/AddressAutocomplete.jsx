@@ -20,12 +20,22 @@ export default function AddressAutocomplete({ value, onChange, placeholder }) {
     if (!apiKey) return;
     if (window.google?.maps?.places) { setScriptLoaded(true); return; }
     const existing = document.getElementById('gmaps-script');
-    if (existing) { existing.addEventListener('load', () => setScriptLoaded(true)); return; }
+    if (existing) {
+      // Script tag exists but may already be loaded
+      if (window.google?.maps) {
+        setScriptLoaded(true);
+      } else {
+        existing.addEventListener('load', () => setScriptLoaded(true));
+      }
+      return;
+    }
     const script = document.createElement('script');
     script.id = 'gmaps-script';
-    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places`;
+    script.src = `https://maps.googleapis.com/maps/api/js?key=${apiKey}&libraries=places&callback=Function.prototype`;
     script.async = true;
+    script.defer = true;
     script.onload = () => setScriptLoaded(true);
+    script.onerror = () => console.error('Failed to load Google Maps script');
     document.head.appendChild(script);
   }, [apiKey]);
 
