@@ -34,6 +34,7 @@ export default function Admin() {
 
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState('user');
+  const [inviteTier, setInviteTier] = useState('0');
   const [inviteOpen, setInviteOpen] = useState(false);
 
   const [tierEmail, setTierEmail] = useState('');
@@ -69,9 +70,14 @@ export default function Admin() {
 
   const handleInvite = async () => {
     await base44.users.inviteUser(inviteEmail, inviteRole);
+    if (inviteRole === 'user') {
+      await base44.entities.RepTier.create({ rep_email: inviteEmail, rep_name: inviteEmail, tier: parseInt(inviteTier) });
+      queryClient.invalidateQueries({ queryKey: ['repTiers'] });
+    }
     toast.success(`Invited ${inviteEmail} as ${inviteRole === 'admin' ? 'Admin' : 'Rep'}`);
     setInviteOpen(false);
     setInviteEmail('');
+    setInviteTier('0');
     queryClient.invalidateQueries({ queryKey: ['users'] });
   };
 
@@ -112,6 +118,19 @@ export default function Admin() {
                     </SelectContent>
                   </Select>
                 </div>
+                {inviteRole === 'user' && (
+                  <div className="space-y-2">
+                    <Label>Tier</Label>
+                    <Select value={inviteTier} onValueChange={setInviteTier}>
+                      <SelectTrigger><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        {Object.entries(TIER_LABELS).map(([val, label]) => (
+                          <SelectItem key={val} value={val}>{label}</SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
               </div>
               <DialogFooter>
                 <Button onClick={handleInvite} disabled={!inviteEmail}>Send Invite</Button>
