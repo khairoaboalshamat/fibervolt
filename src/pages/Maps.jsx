@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Locate, Layers, SatelliteDish, Map, Filter } from 'lucide-react';
+import { Upload, Locate, Layers, SatelliteDish, Map, Filter, MapPin } from 'lucide-react';
 import { PIN_STATUSES } from '@/components/maps/PinStatusBadge';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
@@ -52,10 +52,10 @@ function userLocationIcon() {
   });
 }
 
-function ClickHandler({ onMapClick, drawerOpen }) {
+function ClickHandler({ onMapClick, addingPin, drawerOpen }) {
   useMapEvents({
     click: (e) => {
-      if (!drawerOpen) onMapClick(e.latlng);
+      if (addingPin && !drawerOpen) onMapClick(e.latlng);
     }
   });
   return null;
@@ -92,6 +92,7 @@ export default function Maps() {
   const [satellite, setSatellite] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
+  const [addingPin, setAddingPin] = useState(false);
   const fileInputRef = useRef();
 
   const drawerPin = selectedPin || newPin;
@@ -131,9 +132,19 @@ export default function Maps() {
     }).catch(() => {});
   };
 
-  const handleMapClick = useCallback((latlng) => {
+  const handleMapClick = useCallback(async (latlng) => {
     setSelectedPin(null);
+    setAddingPin(false);
+    // Optimistically open drawer with coords while we reverse-geocode
     setNewPin({ lat: latlng.lat, lng: latlng.lng, status: 'knocked', notes: '', address: '' });
+    // Reverse geocode using Nominatim
+    fetch(`https://nominatim.openstreetmap.org/reverse?lat=${latlng.lat}&lon=${latlng.lng}&format=json`)
+      .then(r => r.json())
+      .then(data => {
+        const address = data.display_name?.split(',').slice(0, 3).join(',').trim() || '';
+        setNewPin(prev => prev ? { ...prev, address } : prev);
+      })
+      .catch(() => {});
   }, []);
 
   const handleSave = (pinData) => {
@@ -225,7 +236,7 @@ export default function Maps() {
   }, [visiblePins]);
 
   return (
-    <div className="relative" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden' }}>
+    <div className="relative" style={{ height: 'calc(100vh - 64px)', overflow: 'hidden', cursor: addingPin ? 'crosshair' : 'default' }}>
       {/* Silent background components */}
       <RepTracker user={user} />
 
@@ -237,7 +248,7 @@ export default function Maps() {
         zoomControl={false}
       >
         <TileLayer url={tileUrl} attribution="" />
-        <ClickHandler onMapClick={handleMapClick} drawerOpen={drawerOpen} />
+        <ClickHandler onMapClick={handleMapClick} addingPin={addingPin} drawerOpen={drawerOpen} />
         {flyTo && <FlyToLocation location={flyTo} />}
 
         {/* Territory overlays */}
@@ -314,6 +325,23 @@ export default function Maps() {
         </div>
       )}
 
+      {/* Add Pin button */}
+      {!drawerOpen && (
+        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000]">
+          <button
+            onClick={() => { setAddingPin(v => !v); setSelectedPin(null); setNewPin(null); }}
+            className={`flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-xl transition-all ${
+              addingPin
+                ? 'bg-destructive text-white ring-4 ring-destructive/30'
+                : 'bg-primary text-white hover:bg-primary/90'
+            }`}
+          >
+            <MapPin className="h-4 w-4" />
+            {addingPin ? 'Tap map to place pin — cancel' : '+ Add Pin'}
+          </button>
+        </div>
+      )}
+
       {/* Right side floating buttons */}
       <div className="absolute right-3 bottom-8 z-[1000] flex flex-col gap-2">
         {/* Locate me */}
@@ -367,7 +395,7 @@ export default function Maps() {
         isNew={!!newPin && !selectedPin}
         onSave={handleSave}
         onDelete={handleDelete}
-        onClose={() => { setSelectedPin(null); setNewPin(null); }}
+        onClose={() => { setSelectedPin(null); setNewPin(null); setAddingPin(false); }}
       />
     </div>
   );
