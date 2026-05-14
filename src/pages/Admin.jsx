@@ -192,9 +192,13 @@ export default function Admin() {
                   </thead>
                   <tbody className="divide-y divide-border">
                     {sales.map(s => {
+                      const repUser = users.find(u => u.email === s.rep_email);
+                      const isRepAdmin = repUser?.role === 'admin' || s.rep_email === user?.email;
                       const tier = getRepTier(s.rep_email);
-                      const repPay = TOTAL_STACK[s.plan] ? calcRepPay(s.plan, tier) : (s.commission_amount || 0);
-                      const override = TOTAL_STACK[s.plan] ? TOTAL_STACK[s.plan] - repPay : null;
+                      const repPay = TOTAL_STACK[s.plan]
+                        ? (isRepAdmin ? TOTAL_STACK[s.plan] : calcRepPay(s.plan, tier))
+                        : (s.commission_amount || 0);
+                      const override = TOTAL_STACK[s.plan] && !isRepAdmin ? TOTAL_STACK[s.plan] - repPay : null;
                       return (
                         <tr key={s.id} className="hover:bg-muted/30">
                           <td className="py-3">
