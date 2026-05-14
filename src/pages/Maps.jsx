@@ -7,7 +7,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Upload, Locate, Layers, SatelliteDish, Map, Filter } from 'lucide-react';
-import { PIN_STATUSES, getStatus } from '@/components/maps/PinStatusBadge';
+import { PIN_STATUSES } from '@/components/maps/PinStatusBadge';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
 import OfflineBanner from '@/components/maps/OfflineBanner';
@@ -257,18 +257,11 @@ export default function Maps() {
           <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon()} />
         )}
 
-        {/* Existing pins */}
-        {visiblePins.map(pin => {
-          const s = getStatus(pin.status);
-          return (
-            <Marker
-              key={pin.id}
-              position={[pin.lat, pin.lng]}
-              icon={createPinIcon(s.color)}
-              eventHandlers={{ click: () => { setNewPin(null); setSelectedPin(pin); } }}
-            />
-          );
-        })}
+        {/* Clustered pins */}
+        <ClusteredPins
+          pins={visiblePins}
+          onPinClick={(pin) => { setNewPin(null); setSelectedPin(pin); }}
+        />
 
         {/* New unsaved pin */}
         {newPin && (
