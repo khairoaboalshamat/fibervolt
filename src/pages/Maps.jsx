@@ -15,6 +15,7 @@ import { addToOfflineQueue, flushOfflineQueue } from '@/lib/offlinePins';
 import * as XLSX from 'xlsx';
 import MapPinDrawer from '@/components/maps/MapPinDrawer';
 import ClusteredPins from '@/components/maps/ClusteredPins';
+import MapSearchBar from '@/components/maps/MapSearchBar';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -281,7 +282,19 @@ export default function Maps() {
       </MapContainer>
 
       {/* Top bar overlay */}
-      <div className="absolute top-3 left-3 right-3 z-[1000] flex items-center gap-2">
+      <div className="absolute top-3 left-3 right-3 z-[1000] flex flex-col gap-2">
+        {/* Search + filter row */}
+        <div className="flex items-center gap-2">
+          <MapSearchBar onSelectLocation={(loc) => setFlyTo({ ...loc, _t: Date.now() })} />
+          {isAdmin && (
+            <button
+              onClick={() => setShowFilters(v => !v)}
+              className="bg-black/60 backdrop-blur-sm text-white rounded-xl p-2.5 hover:bg-black/70 transition-colors shrink-0"
+            >
+              <Filter className="h-4 w-4" />
+            </button>
+          )}
+        </div>
         {/* Status summary pills */}
         <div className="flex-1 bg-black/60 backdrop-blur-sm rounded-xl px-3 py-2 flex items-center gap-2 overflow-x-auto scrollbar-hide">
           <span className="text-white/70 text-xs font-medium shrink-0">
@@ -299,21 +312,11 @@ export default function Maps() {
             </button>
           ))}
         </div>
-
-        {/* Filter button */}
-        {isAdmin && (
-          <button
-            onClick={() => setShowFilters(v => !v)}
-            className="bg-black/60 backdrop-blur-sm text-white rounded-xl p-2.5 hover:bg-black/70 transition-colors"
-          >
-            <Filter className="h-4 w-4" />
-          </button>
-        )}
       </div>
 
       {/* Admin rep filter dropdown */}
       {showFilters && isAdmin && (
-        <div className="absolute top-16 right-3 z-[1000] bg-card border border-border rounded-xl shadow-2xl p-3 w-56">
+        <div className="absolute top-28 right-3 z-[1000] bg-card border border-border rounded-xl shadow-2xl p-3 w-56">
           <p className="text-xs font-semibold text-muted-foreground mb-2 uppercase tracking-wide">Filter by Rep</p>
           <Select value={filterRep} onValueChange={v => { setFilterRep(v); setShowFilters(false); }}>
             <SelectTrigger className="h-8 text-sm"><SelectValue /></SelectTrigger>
@@ -385,7 +388,7 @@ export default function Maps() {
       </div>
 
       {/* Offline banner */}
-      <div className="absolute top-16 left-3 right-3 z-[1000]">
+      <div className="absolute top-28 left-3 right-3 z-[1000]">
         <OfflineBanner onSync={handleOfflineSync} />
       </div>
 
