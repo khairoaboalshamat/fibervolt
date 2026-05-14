@@ -55,22 +55,23 @@ export default function MapPinDrawer({ pin, isNew, onSave, onDelete, onClose }) 
         </div>
 
         {/* Header */}
-        <div className="flex items-start justify-between px-4 pb-3">
-          <div className="flex items-start gap-2 flex-1 min-w-0">
-            <div className="w-3 h-3 rounded-full mt-1.5 shrink-0" style={{ background: currentStatus?.color }} />
-            <div className="min-w-0">
-              <p className="font-semibold text-sm leading-tight truncate">
-                {pin.address || `${pin.lat?.toFixed(5)}, ${pin.lng?.toFixed(5)}`}
-              </p>
-              {pin.rep_name && (
-                <p className="text-xs text-muted-foreground">Rep: {pin.rep_name}</p>
-              )}
+        <div className="flex items-start justify-between px-4 pb-4 border-b border-border">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1.5">
+              <div className="w-2.5 h-2.5 rounded-full shrink-0" style={{ background: currentStatus?.color }} />
+              <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">{currentStatus?.label}</span>
               {isNew && (
-                <span className="inline-block text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full mt-0.5">New pin</span>
+                <span className="text-xs bg-primary/10 text-primary px-2 py-0.5 rounded-full">New</span>
               )}
             </div>
+            <p className="font-bold text-base leading-snug break-words">
+              {pin.address || `${pin.lat?.toFixed(5)}, ${pin.lng?.toFixed(5)}`}
+            </p>
+            {pin.rep_name && (
+              <p className="text-xs text-muted-foreground mt-1">Rep: {pin.rep_name}</p>
+            )}
           </div>
-          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1 shrink-0">
+          <button onClick={onClose} className="text-muted-foreground hover:text-foreground p-1 shrink-0 ml-2">
             <X className="h-4 w-4" />
           </button>
         </div>
