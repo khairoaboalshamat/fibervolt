@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
-import AddressResultCard from './AddressResultCard.jsx';
+import AddressResultCard from '@/components/coverage/AddressResultCard.jsx';
 import * as XLSX from 'xlsx';
 
 export default function BulkUploadScanner({ pins, clientMap }) {
@@ -62,9 +62,7 @@ export default function BulkUploadScanner({ pins, clientMap }) {
             <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> {fiberCount} fiber available</span>
             <span className="text-blue-600 font-medium flex items-center gap-1"><AlertCircle className="h-3.5 w-3.5" /> {customerCount} customers</span>
           </div>
-          <div className="space-y-2">
-            {results.map((r, i) => <AddressResultCard key={i} {...r} />)}
-          </div>
+          <div className="space-y-2">{results.map((r, i) => <AddressResultCard key={i} {...r} />)}</div>
         </>
       )}
     </div>

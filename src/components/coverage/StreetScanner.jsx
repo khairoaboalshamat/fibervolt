@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Map, Loader2, CheckCircle2 } from 'lucide-react';
-import AddressResultCard from './AddressResultCard.jsx';
+import AddressResultCard from '@/components/coverage/AddressResultCard.jsx';
 
 export default function StreetScanner({ pins, clientMap }) {
   const [street, setStreet] = useState('');
@@ -17,13 +17,8 @@ export default function StreetScanner({ pins, clientMap }) {
     setResults([]);
     try {
       const res = await base44.integrations.Core.InvokeLLM({
-        prompt: `Generate a list of 20 realistic street addresses on "${street}, ${city}". Use typical house number ranges for that type of street. Return only JSON.`,
-        response_json_schema: {
-          type: 'object',
-          properties: {
-            addresses: { type: 'array', items: { type: 'string' } },
-          },
-        },
+        prompt: `Generate a list of 20 realistic street addresses on "${street}, ${city}". Use typical house number ranges. Return only JSON.`,
+        response_json_schema: { type: 'object', properties: { addresses: { type: 'array', items: { type: 'string' } } } },
       });
       const addresses = res?.addresses || [];
       const checked = addresses.map(addr => {
@@ -59,12 +54,9 @@ export default function StreetScanner({ pins, clientMap }) {
       {results.length > 0 && (
         <>
           <p className="text-sm font-medium flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4 text-green-600" />
-            {fiberCount} of {results.length} addresses have fiber
+            <CheckCircle2 className="h-4 w-4 text-green-600" /> {fiberCount} of {results.length} addresses have fiber
           </p>
-          <div className="space-y-2">
-            {results.map((r, i) => <AddressResultCard key={i} {...r} />)}
-          </div>
+          <div className="space-y-2">{results.map((r, i) => <AddressResultCard key={i} {...r} />)}</div>
         </>
       )}
     </div>

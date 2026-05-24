@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { MapContainer, TileLayer, Rectangle, useMapEvents } from 'react-leaflet';
 import 'leaflet/dist/leaflet.css';
 import { Wifi, Users, MapPin } from 'lucide-react';
-import AddressResultCard from './AddressResultCard.jsx';
+import AddressResultCard from '@/components/coverage/AddressResultCard.jsx';
 
 function RectangleDrawer({ onBoundsChange }) {
   const [start, setStart] = useState(null);
@@ -24,10 +24,7 @@ function RectangleDrawer({ onBoundsChange }) {
   if (!start || !end) return null;
   return (
     <Rectangle
-      bounds={[
-        [Math.min(start.lat, end.lat), Math.min(start.lng, end.lng)],
-        [Math.max(start.lat, end.lat), Math.max(start.lng, end.lng)],
-      ]}
+      bounds={[[Math.min(start.lat, end.lat), Math.min(start.lng, end.lng)], [Math.max(start.lat, end.lat), Math.max(start.lng, end.lng)]]}
       pathOptions={{ color: '#3b82f6', fillColor: '#3b82f6', fillOpacity: 0.15, weight: 2 }}
     />
   );
@@ -42,20 +39,18 @@ export default function MapZoneScanner({ pins, clientMap }) {
     const maxLat = Math.max(bounds[0].lat, bounds[1].lat);
     const minLng = Math.min(bounds[0].lng, bounds[1].lng);
     const maxLng = Math.max(bounds[0].lng, bounds[1].lng);
-    return pins
-      .filter(p => p.lat >= minLat && p.lat <= maxLat && p.lng >= minLng && p.lng <= maxLng)
-      .map(p => {
-        const addrKey = (p.address || '').toLowerCase().trim();
-        const client = clientMap[addrKey];
-        return {
-          address: p.address || `${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)}`,
-          fiberStatus: p.fiber_status || 'unknown',
-          isCustomer: !!client || p.status === 'sale' || p.status === 'installed' || p.status === 'already_customer',
-          customerName: client?.name,
-          repName: p.rep_name,
-          status: p.status,
-        };
-      });
+    return pins.filter(p => p.lat >= minLat && p.lat <= maxLat && p.lng >= minLng && p.lng <= maxLng).map(p => {
+      const addrKey = (p.address || '').toLowerCase().trim();
+      const client = clientMap[addrKey];
+      return {
+        address: p.address || `${p.lat?.toFixed(4)}, ${p.lng?.toFixed(4)}`,
+        fiberStatus: p.fiber_status || 'unknown',
+        isCustomer: !!client || p.status === 'sale' || p.status === 'installed' || p.status === 'already_customer',
+        customerName: client?.name,
+        repName: p.rep_name,
+        status: p.status,
+      };
+    });
   }, [bounds, pins, clientMap]);
 
   const fiberCount = zoneResults.filter(r => r.fiberStatus === 'available').length;
@@ -70,9 +65,7 @@ export default function MapZoneScanner({ pins, clientMap }) {
           <RectangleDrawer onBoundsChange={setBounds} />
         </MapContainer>
       </div>
-      {bounds && zoneResults.length === 0 && (
-        <p className="text-sm text-muted-foreground text-center py-4">No pins found in selected zone.</p>
-      )}
+      {bounds && zoneResults.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No pins found in selected zone.</p>}
       {zoneResults.length > 0 && (
         <>
           <div className="grid grid-cols-3 gap-2">
@@ -88,9 +81,7 @@ export default function MapZoneScanner({ pins, clientMap }) {
               </div>
             ))}
           </div>
-          <div className="space-y-2 max-h-64 overflow-y-auto">
-            {zoneResults.map((r, i) => <AddressResultCard key={i} {...r} />)}
-          </div>
+          <div className="space-y-2 max-h-64 overflow-y-auto">{zoneResults.map((r, i) => <AddressResultCard key={i} {...r} />)}</div>
         </>
       )}
     </div>

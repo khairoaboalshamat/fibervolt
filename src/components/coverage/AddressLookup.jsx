@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Search, Loader2 } from 'lucide-react';
-import AddressResultCard from './AddressResultCard.jsx';
+import AddressResultCard from '@/components/coverage/AddressResultCard.jsx';
 
 export default function AddressLookup({ pins, clientMap }) {
   const [query, setQuery] = useState('');
@@ -49,31 +48,18 @@ export default function AddressLookup({ pins, clientMap }) {
       <p className="text-sm text-muted-foreground">Search any address to check fiber availability and customer status.</p>
       <div className="relative">
         <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
-        <Input
-          value={query}
-          onChange={e => fetchSuggestions(e.target.value)}
-          placeholder="Enter an address..."
-          className="pl-9"
-        />
+        <Input value={query} onChange={e => fetchSuggestions(e.target.value)} placeholder="Enter an address..." className="pl-9" />
         {suggestions.length > 0 && (
           <div className="absolute z-20 w-full mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
             {suggestions.map(s => (
-              <button
-                key={s.place_id}
-                onClick={() => selectAddress(s)}
-                className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors border-b border-border last:border-0"
-              >
+              <button key={s.place_id} onClick={() => selectAddress(s)} className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors border-b border-border last:border-0">
                 {s.description}
               </button>
             ))}
           </div>
         )}
       </div>
-      {loading && (
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Loader2 className="h-4 w-4 animate-spin" /> Checking...
-        </div>
-      )}
+      {loading && <div className="flex items-center gap-2 text-sm text-muted-foreground"><Loader2 className="h-4 w-4 animate-spin" /> Checking...</div>}
       {result && !loading && <AddressResultCard {...result} />}
     </div>
   );
