@@ -410,25 +410,25 @@ export default function Maps() {
         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-2">
           <button
             onClick={() => { setAddingPin(v => !v); setSelectedPin(null); setNewPin(null); }}
-            className={`flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-xl transition-all ${
+            className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold text-xs shadow-xl transition-all ${
               addingPin
                 ? 'bg-destructive text-white ring-4 ring-destructive/30'
                 : 'bg-primary text-white hover:bg-primary/90'
             }`}
           >
-            <MapPin className="h-4 w-4" />
+            <MapPin className="h-3.5 w-3.5" />
             {addingPin ? 'Tap map to place pin — cancel' : '+ Add Pin'}
           </button>
           {isAdmin && (
             <button
               onClick={() => { setDrawingTerritory(v => !v); setDraftTerritoryPoints([]); }}
-              className={`flex items-center gap-2 px-5 py-3 rounded-full font-semibold text-sm shadow-xl transition-all ${
+              className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold text-xs shadow-xl transition-all ${
                 drawingTerritory
                   ? 'bg-destructive text-white ring-4 ring-destructive/30'
                   : 'bg-primary text-white hover:bg-primary/90'
               }`}
             >
-              <PenLine className="h-4 w-4" />
+              <PenLine className="h-3.5 w-3.5" />
               {drawingTerritory ? `${draftTerritoryPoints.length} points — cancel` : '+ Draw Territory'}
             </button>
           )}
