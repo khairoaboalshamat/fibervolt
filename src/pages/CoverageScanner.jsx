@@ -1,19 +1,21 @@
 import React, { useState, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Wifi, WifiOff, CheckCircle2, MapPin, RefreshCw, Search, Upload, Map, ScanSearch } from 'lucide-react';
+import { Wifi, WifiOff, CheckCircle2, MapPin, RefreshCw, Search, Upload, Map, ScanSearch, LayoutGrid } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/AuthContext';
 import AddressLookup from '@/components/coverage/AddressLookup.jsx';
 import BulkUploadScanner from '@/components/coverage/BulkUploadScanner.jsx';
 import StreetScanner from '@/components/coverage/StreetScanner.jsx';
 import MapZoneScanner from '@/components/coverage/MapZoneScanner.jsx';
+import FiberDensityMap from '@/components/coverage/FiberDensityMap.jsx';
 
 const TABS = [
   { id: 'lookup', label: 'Address Lookup', icon: Search, desc: 'Single address' },
   { id: 'street', label: 'Street Scan', icon: Map, desc: 'Entire street' },
   { id: 'upload', label: 'Bulk Upload', icon: Upload, desc: 'CSV / Excel' },
   { id: 'zone', label: 'Map Zone', icon: MapPin, desc: 'Draw area' },
+  { id: 'density', label: 'Density Map', icon: LayoutGrid, desc: 'Heat map' },
 ];
 
 export default function CoverageScanner() {
@@ -85,7 +87,7 @@ export default function CoverageScanner() {
         </div>
 
         {/* Tabs */}
-        <div className="grid grid-cols-4 gap-1 pb-3">
+        <div className="grid grid-cols-5 gap-1 pb-3">
           {TABS.map(t => (
             <button
               key={t.id}
@@ -107,6 +109,7 @@ export default function CoverageScanner() {
         {tab === 'street' && <StreetScanner {...sharedProps} />}
         {tab === 'upload' && <BulkUploadScanner {...sharedProps} />}
         {tab === 'zone' && <MapZoneScanner pins={pins} clients={clients} clientMap={clientMap} />}
+        {tab === 'density' && <FiberDensityMap pins={pins} />}
       </div>
     </div>
   );
