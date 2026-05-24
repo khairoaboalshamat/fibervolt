@@ -65,19 +65,19 @@ export default function MapZoneScanner({ pins, clientMap }) {
           <RectangleDrawer onBoundsChange={setBounds} />
         </MapContainer>
       </div>
-      {bounds && zoneResults.length === 0 && <p className="text-sm text-muted-foreground text-center py-4">No pins found in selected zone.</p>}
+      {bounds && zoneResults.length === 0 && <p className="text-sm text-center py-4" style={{ color: '#6b7280' }}>No pins found in selected zone.</p>}
       {zoneResults.length > 0 && (
         <>
           <div className="grid grid-cols-3 gap-2">
             {[
-              { label: 'Total', value: zoneResults.length, icon: MapPin, color: 'text-slate-500' },
-              { label: 'Fiber', value: fiberCount, icon: Wifi, color: 'text-green-600' },
-              { label: 'Customers', value: customerCount, icon: Users, color: 'text-blue-600' },
+              { label: 'Total', value: zoneResults.length, icon: MapPin, color: '#6b7280' },
+              { label: 'Fiber', value: fiberCount, icon: Wifi, color: '#15803d' },
+              { label: 'Customers', value: customerCount, icon: Users, color: '#1d4ed8' },
             ].map(s => (
               <div key={s.label} className="bg-muted rounded-lg p-2 text-center">
-                <s.icon className={`h-4 w-4 mx-auto mb-0.5 ${s.color}`} />
-                <p className="text-lg font-bold leading-none">{s.value}</p>
-                <p className="text-xs text-muted-foreground">{s.label}</p>
+                <s.icon style={{ color: s.color }} className="h-4 w-4 mx-auto mb-0.5" />
+                <p className="text-lg font-bold leading-none" style={{ color: '#111827' }}>{s.value}</p>
+                <p className="text-xs" style={{ color: '#6b7280' }}>{s.label}</p>
               </div>
             ))}
           </div>

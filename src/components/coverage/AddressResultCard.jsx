@@ -2,31 +2,31 @@ import React from 'react';
 import { Wifi, WifiOff, User, HelpCircle } from 'lucide-react';
 
 const FIBER_CONFIG = {
-  available:          { label: 'Fiber Available',       color: 'text-green-700',  bg: 'bg-green-50',   border: 'border-green-200',  icon: Wifi },
-  not_available:      { label: 'No Fiber',              color: 'text-red-700',    bg: 'bg-red-50',     border: 'border-red-200',    icon: WifiOff },
-  under_construction: { label: 'Under Construction',    color: 'text-yellow-800', bg: 'bg-yellow-50',  border: 'border-yellow-200', icon: Wifi },
-  planned:            { label: 'Planned',               color: 'text-blue-700',   bg: 'bg-blue-50',    border: 'border-blue-200',   icon: Wifi },
-  unknown:            { label: 'Unknown',               color: 'text-slate-700',  bg: 'bg-slate-100',  border: 'border-slate-300',  icon: HelpCircle },
+  available:          { label: 'Fiber Available',    color: '#15803d', bg: '#dcfce7', border: '#86efac', icon: Wifi },
+  not_available:      { label: 'No Fiber',           color: '#b91c1c', bg: '#fee2e2', border: '#fca5a5', icon: WifiOff },
+  under_construction: { label: 'Under Construction', color: '#92400e', bg: '#fef3c7', border: '#fcd34d', icon: Wifi },
+  planned:            { label: 'Planned',            color: '#1d4ed8', bg: '#dbeafe', border: '#93c5fd', icon: Wifi },
+  unknown:            { label: 'Unknown',            color: '#374151', bg: '#f3f4f6', border: '#d1d5db', icon: HelpCircle },
 };
 
 export default function AddressResultCard({ address, fiberStatus = 'unknown', isCustomer = false, customerName, repName, status }) {
   const cfg = FIBER_CONFIG[fiberStatus] || FIBER_CONFIG.unknown;
   const Icon = cfg.icon;
   return (
-    <div className={`rounded-xl border ${cfg.border} ${cfg.bg} px-3 py-2.5 flex items-start gap-2.5`}>
-      <Icon className={`h-4 w-4 mt-0.5 shrink-0 ${cfg.color}`} />
+    <div style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }} className="rounded-xl px-3 py-2.5 flex items-start gap-2.5">
+      <Icon style={{ color: cfg.color }} className="h-4 w-4 mt-0.5 shrink-0" />
       <div className="flex-1 min-w-0">
-        <p className="text-sm font-medium truncate text-foreground">{address}</p>
+        <p className="text-sm font-semibold truncate" style={{ color: '#111827' }}>{address}</p>
         <div className="flex flex-wrap items-center gap-2 mt-0.5">
-          <span className={`text-xs font-semibold ${cfg.color}`}>{cfg.label}</span>
+          <span className="text-xs font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
           {isCustomer && (
-            <span className="text-xs bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded-full flex items-center gap-1">
+            <span className="text-xs px-1.5 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#dbeafe', color: '#1e40af' }}>
               <User className="h-2.5 w-2.5" /> {customerName || 'Customer'}
             </span>
           )}
-          {repName && <span className="text-xs text-muted-foreground">Rep: {repName}</span>}
+          {repName && <span className="text-xs" style={{ color: '#374151' }}>Rep: {repName}</span>}
           {status && status !== 'lead' && (
-            <span className="text-xs text-muted-foreground capitalize">{status.replace(/_/g, ' ')}</span>
+            <span className="text-xs capitalize" style={{ color: '#374151' }}>{status.replace(/_/g, ' ')}</span>
           )}
         </div>
       </div>

@@ -53,8 +53,8 @@ export default function StreetScanner({ pins, clientMap }) {
       </Button>
       {results.length > 0 && (
         <>
-          <p className="text-sm font-medium flex items-center gap-1.5">
-            <CheckCircle2 className="h-4 w-4 text-green-600" /> {fiberCount} of {results.length} addresses have fiber
+          <p className="text-sm font-medium flex items-center gap-1.5" style={{ color: '#15803d' }}>
+            <CheckCircle2 className="h-4 w-4" /> {fiberCount} of {results.length} addresses have fiber
           </p>
           <div className="space-y-2">{results.map((r, i) => <AddressResultCard key={i} {...r} />)}</div>
         </>

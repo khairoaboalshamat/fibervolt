@@ -59,8 +59,8 @@ export default function BulkUploadScanner({ pins, clientMap }) {
       {results.length > 0 && (
         <>
           <div className="flex gap-3 text-sm">
-            <span className="text-green-600 font-medium flex items-center gap-1"><CheckCircle2 className="h-3.5 w-3.5" /> {fiberCount} fiber available</span>
-            <span className="text-blue-600 font-medium flex items-center gap-1"><AlertCircle className="h-3.5 w-3.5" /> {customerCount} customers</span>
+            <span className="font-medium flex items-center gap-1" style={{ color: '#15803d' }}><CheckCircle2 className="h-3.5 w-3.5" /> {fiberCount} fiber available</span>
+            <span className="font-medium flex items-center gap-1" style={{ color: '#1d4ed8' }}><AlertCircle className="h-3.5 w-3.5" /> {customerCount} customers</span>
           </div>
           <div className="space-y-2">{results.map((r, i) => <AddressResultCard key={i} {...r} />)}</div>
         </>
