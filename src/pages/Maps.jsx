@@ -6,7 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Upload, Locate, Layers, SatelliteDish, Map, Filter, MapPin, PenLine } from 'lucide-react';
+import { Upload, Locate, Layers, SatelliteDish, Map, Filter, MapPin, PenLine, ScanLine } from 'lucide-react';
 import { PIN_STATUSES } from '@/components/maps/PinStatusBadge';
 import RepTracker from '@/components/maps/RepTracker';
 import LiveRepDots from '@/components/maps/LiveRepDots';
@@ -18,6 +18,7 @@ import MapPinDrawer from '@/components/maps/MapPinDrawer';
 import TerritoryDrawer from '@/components/maps/TerritoryDrawer';
 import ClusteredPins from '@/components/maps/ClusteredPins';
 import MapSearchBar from '@/components/maps/MapSearchBar';
+import LeadScanner from '@/components/maps/LeadScanner';
 
 delete L.Icon.Default.prototype._getIconUrl;
 L.Icon.Default.mergeOptions({
@@ -133,6 +134,7 @@ export default function Maps() {
   const [uploading, setUploading] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [addingPin, setAddingPin] = useState(false);
+  const [showScanner, setShowScanner] = useState(false);
   const [drawingTerritory, setDrawingTerritory] = useState(false);
   const [draftTerritoryPoints, setDraftTerritoryPoints] = useState([]);
   const fileInputRef = useRef();
@@ -465,6 +467,15 @@ export default function Maps() {
           <Layers className="h-5 w-5" />
         </button>
 
+        {/* Lead Scanner */}
+        <button
+          onClick={() => setShowScanner(true)}
+          className="w-11 h-11 rounded-full bg-white shadow-lg flex items-center justify-center hover:bg-gray-50 transition-colors"
+          title="Lead Scanner"
+        >
+          <ScanLine className="h-5 w-5 text-gray-700" />
+        </button>
+
         {/* Upload */}
         <button
           onClick={() => fileInputRef.current?.click()}
@@ -490,6 +501,18 @@ export default function Maps() {
         onDelete={handleDelete}
         onClose={() => { setSelectedPin(null); setNewPin(null); setAddingPin(false); }}
       />
+
+      {/* Lead Scanner Modal */}
+      {showScanner && (
+        <LeadScanner
+          user={user}
+          onPinsCreated={(count) => {
+            queryClient.invalidateQueries({ queryKey: ['pins'] });
+            setShowScanner(false);
+          }}
+          onClose={() => setShowScanner(false)}
+        />
+      )}
 
       {/* Territory drawing drawer */}
       <TerritoryDrawer
