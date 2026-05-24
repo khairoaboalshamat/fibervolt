@@ -2,33 +2,34 @@ import React from 'react';
 import { Wifi, WifiOff, User, HelpCircle } from 'lucide-react';
 
 const FIBER_CONFIG = {
-  available:          { label: 'Fiber Available',    color: '#15803d', bg: '#dcfce7', border: '#86efac', icon: Wifi },
-  not_available:      { label: 'No Fiber',           color: '#b91c1c', bg: '#fee2e2', border: '#fca5a5', icon: WifiOff },
-  under_construction: { label: 'Under Construction', color: '#92400e', bg: '#fef3c7', border: '#fcd34d', icon: Wifi },
-  planned:            { label: 'Planned',            color: '#1d4ed8', bg: '#dbeafe', border: '#93c5fd', icon: Wifi },
-  unknown:            { label: 'Unknown',            color: '#374151', bg: '#f3f4f6', border: '#d1d5db', icon: HelpCircle },
+  available: { label: 'Fiber Available', color: '#15803d', bg: '#f0fdf4', border: '#86efac', Icon: Wifi },
+  not_available: { label: 'No Fiber', color: '#dc2626', bg: '#fef2f2', border: '#fca5a5', Icon: WifiOff },
+  unknown: { label: 'Unknown', color: '#6b7280', bg: '#f9fafb', border: '#e5e7eb', Icon: HelpCircle },
+  under_construction: { label: 'Under Construction', color: '#d97706', bg: '#fffbeb', border: '#fde68a', Icon: HelpCircle },
+  planned: { label: 'Planned', color: '#7c3aed', bg: '#faf5ff', border: '#ddd6fe', Icon: HelpCircle },
 };
 
-export default function AddressResultCard({ address, fiberStatus = 'unknown', isCustomer = false, customerName, repName, status }) {
+export default function AddressResultCard({ address, fiberStatus, isCustomer, customerName, repName, status }) {
   const cfg = FIBER_CONFIG[fiberStatus] || FIBER_CONFIG.unknown;
-  const Icon = cfg.icon;
+  const StatusIcon = cfg.Icon;
+
   return (
-    <div style={{ background: cfg.bg, border: `1px solid ${cfg.border}` }} className="rounded-xl px-3 py-2.5 flex items-start gap-2.5">
-      <Icon style={{ color: cfg.color }} className="h-4 w-4 mt-0.5 shrink-0" />
-      <div className="flex-1 min-w-0">
-        <p className="text-sm font-semibold truncate" style={{ color: '#111827' }}>{address}</p>
-        <div className="flex flex-wrap items-center gap-2 mt-0.5">
-          <span className="text-xs font-bold" style={{ color: cfg.color }}>{cfg.label}</span>
-          {isCustomer && (
-            <span className="text-xs px-1.5 py-0.5 rounded-full flex items-center gap-1" style={{ background: '#dbeafe', color: '#1e40af' }}>
-              <User className="h-2.5 w-2.5" /> {customerName || 'Customer'}
-            </span>
-          )}
-          {repName && <span className="text-xs" style={{ color: '#374151' }}>Rep: {repName}</span>}
-          {status && status !== 'lead' && (
-            <span className="text-xs capitalize" style={{ color: '#374151' }}>{status.replace(/_/g, ' ')}</span>
-          )}
+    <div className="rounded-xl border p-3 space-y-1.5" style={{ background: cfg.bg, borderColor: cfg.border }}>
+      <div className="flex items-start justify-between gap-2">
+        <p className="text-sm font-medium leading-snug" style={{ color: '#111827' }}>{address}</p>
+        <div className="flex items-center gap-1 shrink-0 px-2 py-0.5 rounded-full text-xs font-semibold" style={{ background: cfg.bg, color: cfg.color, border: `1px solid ${cfg.border}` }}>
+          <StatusIcon className="h-3 w-3" />
+          {cfg.label}
         </div>
+      </div>
+      <div className="flex flex-wrap gap-2 text-xs" style={{ color: '#6b7280' }}>
+        {isCustomer && (
+          <span className="flex items-center gap-1 px-1.5 py-0.5 rounded-full font-medium" style={{ background: '#dbeafe', color: '#1d4ed8' }}>
+            <User className="h-3 w-3" /> {customerName || 'Existing Customer'}
+          </span>
+        )}
+        {repName && <span>Rep: {repName}</span>}
+        {status && <span>Status: {status.replace(/_/g, ' ')}</span>}
       </div>
     </div>
   );

@@ -9,12 +9,13 @@ import BulkUploadScanner from '@/components/coverage/BulkUploadScanner.jsx';
 import StreetScanner from '@/components/coverage/StreetScanner.jsx';
 import MapZoneScanner from '@/components/coverage/MapZoneScanner.jsx';
 import FiberDensityMap from '@/components/coverage/FiberDensityMap.jsx';
+import ZoneScanTool from '@/components/coverage/ZoneScanTool.jsx';
 
 const TABS = [
   { id: 'lookup', label: 'Address Lookup', icon: Search, desc: 'Single address' },
   { id: 'street', label: 'Street Scan', icon: Map, desc: 'Entire street' },
   { id: 'upload', label: 'Bulk Upload', icon: Upload, desc: 'CSV / Excel' },
-  { id: 'zone', label: 'Map Zone', icon: MapPin, desc: 'Draw area' },
+  { id: 'zone', label: 'FCC Zone Scan', icon: MapPin, desc: 'Draw & scan' },
   { id: 'density', label: 'Density Map', icon: LayoutGrid, desc: 'Heat map' },
 ];
 
@@ -108,7 +109,7 @@ export default function CoverageScanner() {
         {tab === 'lookup' && <AddressLookup {...sharedProps} />}
         {tab === 'street' && <StreetScanner {...sharedProps} />}
         {tab === 'upload' && <BulkUploadScanner {...sharedProps} />}
-        {tab === 'zone' && <MapZoneScanner pins={pins} clients={clients} clientMap={clientMap} />}
+        {tab === 'zone' && <ZoneScanTool user={user} onPinsCreated={handlePinsCreated} />}
         {tab === 'density' && <FiberDensityMap pins={pins} />}
       </div>
     </div>
