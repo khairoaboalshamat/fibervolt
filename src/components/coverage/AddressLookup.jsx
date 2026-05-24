@@ -17,7 +17,9 @@ export default function AddressLookup({ pins, clientMap }) {
     try {
       const res = await base44.functions.invoke('placesAutocomplete', { input: value });
       setSuggestions(res.data?.predictions || []);
-    } catch { setSuggestions([]); }
+    } catch {
+      setSuggestions([]);
+    }
   };
 
   const selectAddress = async (suggestion) => {
@@ -26,7 +28,6 @@ export default function AddressLookup({ pins, clientMap }) {
     setLoading(true);
     setResult(null);
     try {
-      // Find matching pin
       const addr = suggestion.description.toLowerCase().trim();
       const pin = pins.find(p => p.address && p.address.toLowerCase().trim() === addr);
       const client = clientMap[addr];
@@ -68,16 +69,12 @@ export default function AddressLookup({ pins, clientMap }) {
           </div>
         )}
       </div>
-
       {loading && (
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Loader2 className="h-4 w-4 animate-spin" /> Checking...
         </div>
       )}
-
-      {result && !loading && (
-        <AddressResultCard {...result} />
-      )}
+      {result && !loading && <AddressResultCard {...result} />}
     </div>
   );
 }

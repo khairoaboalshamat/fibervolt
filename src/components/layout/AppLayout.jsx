@@ -20,7 +20,7 @@ export default function AppLayout({ user }) {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background flex flex-col lg:flex-row">
+    <div className="h-screen bg-background flex flex-col lg:flex-row overflow-hidden">
       <Sidebar
         user={user}
         collapsed={collapsed}
@@ -28,8 +28,8 @@ export default function AppLayout({ user }) {
         mobileOpen={mobileOpen}
         setMobileOpen={setMobileOpen}
       />
-      <div className={`flex-1 flex flex-col transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'}`}>
-        <header className="sticky top-0 z-30 h-16 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 lg:px-6 pt-safe">
+      <div className={`flex-1 flex flex-col min-h-0 transition-all duration-300 ${collapsed ? 'lg:ml-[72px]' : 'lg:ml-64'}`}>
+        <header className="shrink-0 z-30 h-16 bg-background/80 backdrop-blur-md border-b border-border flex items-center px-4 lg:px-6 pt-safe">
           <Button
             variant="ghost"
             size="icon"
@@ -41,8 +41,10 @@ export default function AppLayout({ user }) {
           <span className="text-lg font-bold tracking-tight text-foreground">Fiber Volt</span>
           <div className="flex-1" />
         </header>
-        <main className={`flex-1 overflow-y-auto ${isMobile ? 'pb-20' : ''} ${isMapPage ? 'overflow-hidden p-0' : 'p-4 lg:p-6 max-w-7xl mx-auto'}`}>
-          <Outlet />
+        <main className={`flex-1 min-h-0 overflow-y-auto ${isMobile ? 'pb-20' : ''} ${isMapPage ? 'overflow-hidden p-0' : 'p-4 lg:p-6'}`}>
+          <div className={isMapPage ? 'h-full' : 'max-w-7xl mx-auto'}>
+            <Outlet />
+          </div>
         </main>
       </div>
       <BottomTabs />

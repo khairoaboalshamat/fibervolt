@@ -1,11 +1,10 @@
 import React, { useState, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Upload, Loader2, CheckCircle2, AlertCircle } from 'lucide-react';
 import AddressResultCard from './AddressResultCard.jsx';
 import * as XLSX from 'xlsx';
 
-export default function BulkUploadScanner({ pins, clientMap, user, onPinsCreated }) {
+export default function BulkUploadScanner({ pins, clientMap }) {
   const fileInputRef = useRef();
   const [results, setResults] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,14 +16,12 @@ export default function BulkUploadScanner({ pins, clientMap, user, onPinsCreated
     setLoading(true);
     setResults([]);
     setProgress(0);
-
     try {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data);
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
       const rows = XLSX.utils.sheet_to_json(sheet);
       const addresses = rows.map(r => r['address'] || r['Address'] || r['ADDRESS'] || '').filter(Boolean);
-
       const checked = [];
       for (let i = 0; i < addresses.length; i++) {
         const addr = addresses[i];
@@ -59,7 +56,6 @@ export default function BulkUploadScanner({ pins, clientMap, user, onPinsCreated
         {loading ? `Processing… ${progress}%` : 'Upload File'}
       </Button>
       <input ref={fileInputRef} type="file" accept=".csv,.xlsx,.xls" className="hidden" onChange={processFile} />
-
       {results.length > 0 && (
         <>
           <div className="flex gap-3 text-sm">

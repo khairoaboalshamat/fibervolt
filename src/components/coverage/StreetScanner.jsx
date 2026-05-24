@@ -16,7 +16,6 @@ export default function StreetScanner({ pins, clientMap }) {
     setLoading(true);
     setResults([]);
     try {
-      // Use AI to generate a list of likely addresses on the street
       const res = await base44.integrations.Core.InvokeLLM({
         prompt: `Generate a list of 20 realistic street addresses on "${street}, ${city}". Use typical house number ranges for that type of street. Return only JSON.`,
         response_json_schema: {
@@ -26,7 +25,6 @@ export default function StreetScanner({ pins, clientMap }) {
           },
         },
       });
-
       const addresses = res?.addresses || [];
       const checked = addresses.map(addr => {
         const addrKey = addr.toLowerCase().trim();
@@ -58,7 +56,6 @@ export default function StreetScanner({ pins, clientMap }) {
         {loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Map className="h-4 w-4" />}
         {loading ? 'Scanning…' : 'Scan Street'}
       </Button>
-
       {results.length > 0 && (
         <>
           <p className="text-sm font-medium flex items-center gap-1.5">
