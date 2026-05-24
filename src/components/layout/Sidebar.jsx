@@ -2,7 +2,7 @@ import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard, PlusCircle, Calendar, Trophy,
-  DollarSign, Shield, LogOut, Menu, X, Users, Map, PenLine, Activity, FileText } from 'lucide-react';
+  DollarSign, Shield, LogOut, Menu, X, Users, Map, PenLine, Activity, FileText, ScanSearch } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import DeleteAccountDialog from './DeleteAccountDialog';
@@ -14,6 +14,7 @@ const NAV_ITEMS = [
 { path: '/maps', label: 'Map', icon: Map },
 { path: '/activity', label: 'Activity Feed', icon: Activity },
 { path: '/reports', label: 'Rep Reports', icon: FileText },
+{ path: '/coverage', label: 'Coverage Scanner', icon: ScanSearch },
 ];
 
 

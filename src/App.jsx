@@ -19,6 +19,7 @@ import Territories from '@/pages/Territories';
 import Maps from '@/pages/Maps';
 import ActivityFeed from '@/pages/ActivityFeed';
 import RepReports from '@/pages/RepReports';
+import CoverageScanner from '@/pages/CoverageScanner';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, user } = useAuth();
@@ -55,6 +56,7 @@ const AuthenticatedApp = () => {
         <Route path="/maps" element={<Maps />} />
         <Route path="/activity" element={<ActivityFeed />} />
         <Route path="/reports" element={<RepReports />} />
+        <Route path="/coverage" element={<CoverageScanner />} />
       </Route>
       <Route path="*" element={<PageNotFound />} />
     </Routes>
