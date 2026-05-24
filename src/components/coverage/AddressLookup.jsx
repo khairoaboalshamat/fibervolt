@@ -1,84 +1,82 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Search, Loader2 } from 'lucide-react';
 import AddressResultCard from './AddressResultCard.jsx';
 
-export default function AddressLookup({ pins, clients, clientMap }) {
+export default function AddressLookup({ pins, clientMap }) {
   const [query, setQuery] = useState('');
   const [suggestions, setSuggestions] = useState([]);
-  const [loadingSugg, setLoadingSugg] = useState(false);
+  const [loading, setLoading] = useState(false);
   const [result, setResult] = useState(null);
-  const [looking, setLooking] = useState(false);
-  const debounceRef = useRef();
 
-  const handleInput = (val) => {
-    setQuery(val);
-    clearTimeout(debounceRef.current);
-    if (val.length < 3) { setSuggestions([]); return; }
-    debounceRef.current = setTimeout(async () => {
-      setLoadingSugg(true);
-      try {
-        const res = await base44.functions.invoke('placesAutocomplete', { input: val });
-        setSuggestions(res.data?.predictions || []);
-      } finally {
-        setLoadingSugg(false);
-      }
-    }, 400);
+  const fetchSuggestions = async (value) => {
+    setQuery(value);
+    if (value.length < 3) { setSuggestions([]); return; }
+    try {
+      const res = await base44.functions.invoke('placesAutocomplete', { input: value });
+      setSuggestions(res.data?.predictions || []);
+    } catch { setSuggestions([]); }
   };
 
-  const handleSelect = async (prediction) => {
-    setQuery(prediction.description);
+  const selectAddress = async (suggestion) => {
     setSuggestions([]);
-    setLooking(true);
+    setQuery(suggestion.description);
+    setLoading(true);
     setResult(null);
     try {
-      const geo = await base44.functions.invoke('reverseGeocode', { address: prediction.description });
-      const { lat, lng } = geo.data || {};
-      // Try to find existing pin near this address
-      const addrLower = prediction.description.toLowerCase();
-      const existingPin = pins.find(p => (p.address || '').toLowerCase().includes(addrLower.split(',')[0]) || addrLower.includes((p.address || '').toLowerCase().split(',')[0]));
-      const existingClient = clientMap[addrLower] || clients.find(c => (c.address || '').toLowerCase().includes(addrLower.split(',')[0]));
-      setResult({ address: prediction.description, lat, lng, pin: existingPin || null, client: existingClient || null });
+      // Find matching pin
+      const addr = suggestion.description.toLowerCase().trim();
+      const pin = pins.find(p => p.address && p.address.toLowerCase().trim() === addr);
+      const client = clientMap[addr];
+      setResult({
+        address: suggestion.description,
+        fiberStatus: pin?.fiber_status || 'unknown',
+        isCustomer: !!client || pin?.status === 'sale' || pin?.status === 'installed' || pin?.status === 'already_customer',
+        customerName: client?.name,
+        repName: pin?.rep_name,
+        status: pin?.status,
+      });
     } finally {
-      setLooking(false);
+      setLoading(false);
     }
   };
 
   return (
     <div className="space-y-3">
-      <p className="text-sm text-muted-foreground">Type any address to instantly check fiber availability and service status.</p>
+      <p className="text-sm text-muted-foreground">Search any address to check fiber availability and customer status.</p>
       <div className="relative">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground pointer-events-none" />
         <Input
-          className="pl-9"
-          placeholder="e.g. 123 Main St, Dallas, TX"
           value={query}
-          onChange={e => handleInput(e.target.value)}
+          onChange={e => fetchSuggestions(e.target.value)}
+          placeholder="Enter an address..."
+          className="pl-9"
         />
-        {loadingSugg && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 animate-spin text-muted-foreground" />}
+        {suggestions.length > 0 && (
+          <div className="absolute z-20 w-full mt-1 bg-card border border-border rounded-xl shadow-lg overflow-hidden">
+            {suggestions.map(s => (
+              <button
+                key={s.place_id}
+                onClick={() => selectAddress(s)}
+                className="w-full text-left px-4 py-2.5 text-sm hover:bg-muted transition-colors border-b border-border last:border-0"
+              >
+                {s.description}
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
-      {suggestions.length > 0 && (
-        <div className="bg-card border border-border rounded-xl overflow-hidden shadow-lg">
-          {suggestions.map((s, i) => (
-            <button key={i} onClick={() => handleSelect(s)}
-              className="w-full text-left px-4 py-3 text-sm hover:bg-muted border-b border-border last:border-0 transition-colors">
-              {s.description}
-            </button>
-          ))}
+      {loading && (
+        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Loader2 className="h-4 w-4 animate-spin" /> Checking...
         </div>
       )}
 
-      {looking && (
-        <div className="flex items-center justify-center py-8 gap-2 text-muted-foreground">
-          <Loader2 className="h-5 w-5 animate-spin" /> Looking up address...
-        </div>
-      )}
-
-      {result && !looking && (
-        <AddressResultCard address={result.address} pin={result.pin} client={result.client} />
+      {result && !loading && (
+        <AddressResultCard {...result} />
       )}
     </div>
   );
