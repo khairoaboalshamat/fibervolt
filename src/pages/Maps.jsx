@@ -407,38 +407,32 @@ export default function Maps() {
         </div>
       )}
 
-      {/* Add Pin / Draw Territory buttons */}
-      {!drawerOpen && (
-        <div className="absolute bottom-8 right-16 z-[1000] flex flex-col gap-2">
-          <button
-            onClick={() => { setAddingPin(v => !v); setSelectedPin(null); setNewPin(null); }}
-            className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold text-xs shadow-xl transition-all ${
-              addingPin
-                ? 'bg-destructive text-white ring-4 ring-destructive/30'
-                : 'bg-primary text-white hover:bg-primary/90'
-            }`}
-          >
-            <MapPin className="h-3.5 w-3.5" />
-            {addingPin ? 'Tap map to place pin — cancel' : '+ Add Pin'}
-          </button>
-          {isAdmin && (
-            <button
-              onClick={() => { setDrawingTerritory(v => !v); setDraftTerritoryPoints([]); }}
-              className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold text-xs shadow-xl transition-all ${
-                drawingTerritory
-                  ? 'bg-destructive text-white ring-4 ring-destructive/30'
-                  : 'bg-primary text-white hover:bg-primary/90'
-              }`}
-            >
-              <PenLine className="h-3.5 w-3.5" />
-              {drawingTerritory ? `${draftTerritoryPoints.length} points — cancel` : '+ Draw Territory'}
-            </button>
-          )}
-        </div>
-      )}
+
 
       {/* Right side floating buttons */}
       <div className="absolute right-3 bottom-8 z-[1000] flex flex-col gap-2">
+        {/* Add Pin */}
+        {!drawerOpen && (
+          <button
+            onClick={() => { setAddingPin(v => !v); setSelectedPin(null); setNewPin(null); }}
+            className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center transition-colors ${addingPin ? 'bg-destructive text-white ring-4 ring-destructive/30' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+            title={addingPin ? 'Cancel' : 'Add Pin'}
+          >
+            <MapPin className="h-5 w-5" />
+          </button>
+        )}
+
+        {/* Draw Territory (admin) */}
+        {isAdmin && !drawerOpen && (
+          <button
+            onClick={() => { setDrawingTerritory(v => !v); setDraftTerritoryPoints([]); }}
+            className={`w-11 h-11 rounded-full shadow-lg flex items-center justify-center transition-colors ${drawingTerritory ? 'bg-destructive text-white ring-4 ring-destructive/30' : 'bg-white text-gray-700 hover:bg-gray-50'}`}
+            title={drawingTerritory ? `${draftTerritoryPoints.length} points — cancel` : 'Draw Territory'}
+          >
+            <PenLine className="h-5 w-5" />
+          </button>
+        )}
+
         {/* Locate me */}
         <button
           onClick={() => userLocation && setFlyTo({ ...userLocation, _t: Date.now() })}
