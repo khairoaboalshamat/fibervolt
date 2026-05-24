@@ -407,7 +407,7 @@ export default function Maps() {
 
       {/* Add Pin / Draw Territory buttons */}
       {!drawerOpen && (
-        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 z-[1000] flex gap-2">
+        <div className="absolute bottom-8 right-16 z-[1000] flex flex-col gap-2">
           <button
             onClick={() => { setAddingPin(v => !v); setSelectedPin(null); setNewPin(null); }}
             className={`flex items-center gap-2 px-3 py-2 rounded-full font-semibold text-xs shadow-xl transition-all ${
